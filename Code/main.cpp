@@ -131,10 +131,13 @@
   }
   int main(int argc, char** argv)
   {
-    std::cout<<"hi"<<std::endl;
+    std::cout<<"hi hi hi"<<std::endl;
     
-    //int width =depth.cols/4, height=depth.rows/4;
-    //cv::Rect left(0,height,width,height*3), right(width*3,height,width,height*3),center(width,height,width*2,height*3);
+    int width =628/3, height=468/4;
+    cv::Rect rec_left(0,height,width,height*3), rec_right(width*2,height,width,height*3),rec_center(width,height,width,height*3);
+    
+    int width_rgb =1920/3, height_rgb=1080/4;
+    cv::Rect rec_left_rgb(0,height_rgb,width_rgb,height_rgb*3), rec_right_rgb(width_rgb*2,height_rgb,width_rgb,height_rgb*3),rec_center_rgb(width_rgb,height_rgb,width_rgb,height_rgb*3);
     
     objRecognition = Object_Recognition();
     audioMng = AudioManager();
@@ -178,10 +181,11 @@
 	
       /***********************************configure GUI*********************************************/
       cv::namedWindow(COLOR_WINDOW_NAME, CV_WINDOW_NORMAL);
-      cv::resizeWindow(COLOR_WINDOW_NAME, 720, 405);
-      cv::namedWindow(DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
-      cv::resizeWindow(DEPTH_WINDOW_NAME, 960, 540);
+      cv::resizeWindow(COLOR_WINDOW_NAME, 480, 270);
       cv::moveWindow(COLOR_WINDOW_NAME,200,200);
+      cv::namedWindow(DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
+      cv::resizeWindow(DEPTH_WINDOW_NAME, 640, 360);
+      cv::moveWindow(DEPTH_WINDOW_NAME,700,200);
       cv::startWindowThread();
 
       /***********************************start streaming*******************************************/
@@ -199,11 +203,14 @@
 	  cv::Mat renderImage = Image2Mat(sampleSet[rs::core::stream_type::color]);
 	  cv::Mat depthMat = Image2Mat(sampleSet[rs::core::stream_type::depth]);
 	  
-
+	  int* col;
 	  if(!depthMat.empty())
 	  {
-	      int* col=obstacleUtl.directionCol(depthMat);
+	    if( m_frame_number%10 == 0 )
+	    {
+	      col = obstacleUtl.directionCol(depthMat);
 	      navigate(col);
+	    }
 	      /*if (( m_frame_number%50 == 0)&& orInitilized &&col[2]!=0)//process OR
 	      {
                   if(objRecognition.set_rect(col[2])!= rs::core::status_no_error)
@@ -221,7 +228,22 @@
     
 	      }*/
 	  }
-	  //cv::rectangle(COLOR_WINDOW_NAME,);
+	  cv::rectangle(depthMat,rec_left,cv::Scalar(255,0,0),6);//draw left rect
+	  if((col[0] & Obstacle::LEFT)!=0)
+	    cv::putText(renderImage,"BLOCKED!", cv::Point(300,100),2,1.0,cv::Scalar(0,255,255));//draw right rect
+	  cv::rectangle(depthMat,rec_right,cv::Scalar(255,0,0),6);
+	  if((col[0] & Obstacle::RIGHT)!=0)
+	    cv::putText(renderImage,"BLOCKED!", cv::Point(1500,100),2,1.0,cv::Scalar(0,255,255));
+	  cv::rectangle(depthMat,rec_center,cv::Scalar(255,0,0),6);//draw center rect
+	  if((col[0] & Obstacle::CENTER)!=0)
+	    cv::putText(renderImage,"BLOCKED!", cv::Point( 1000,100),2,1.0,cv::Scalar(0,255,255));
+	  
+	  cv::rectangle(renderImage,rec_left_rgb,cv::Scalar(255,0,0),4);
+	  cv::rectangle(renderImage,rec_right_rgb,cv::Scalar(255,0,0),4);
+	  cv::rectangle(renderImage,rec_center_rgb,cv::Scalar(255,0,0),4);
+
+	  
+	  
 	  cv::imshow(COLOR_WINDOW_NAME, renderImage);
 	  cv::imshow(DEPTH_WINDOW_NAME, depthMat*200);
       }
@@ -298,6 +320,7 @@
   
   void audioMessage(Direction d)
   {
+    std::cout<<"direction to turn to: " << d << std::endl;
     if(d == Direction::D_RIGHT)
       audioMng.play(AudioManager::MOVE_RIGHT, m_frame_number);
       //      system("gst-play-1.0 move_right.wav &");

@@ -14,7 +14,7 @@ set(PROJECT_LINK_LIBS
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -pthread -fPIC -std=c++0x -fexceptions -frtti")
 
-set(SOURCES Object_Recognition.cpp
+set(SOURCES Obstacle_Utils.cpp Object_Recognition.cpp
     main.cpp
 )
 
@@ -28,8 +28,8 @@ include_directories(
 link_directories(
     ${SYSROOT}/usr/lib)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} AudioManager.cpp ObstacleManager.cpp Object_Recognition.cpp main.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_LINK_LIBS})
 
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

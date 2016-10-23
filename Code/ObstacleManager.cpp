@@ -5,11 +5,15 @@
   int* Obstacle_utils::directionCol(cv::Mat depth)
   {
     int* returnCode=new int[3]{0,0,0};
-    int width =depth.cols/4, height=depth.rows/4;
-    cv::Rect left(0,height,width,height*3), right(width*3,height,width,height*3),center(width,height,width*2,height*3);
+    
+    //int width =depth.cols/4, height=depth.rows/4;
+    //cv::Rect left(0,height,width,height*3), right(width*3,height,width,height*3),center(width,height,width*2,height*3);
+    
+    int width =depth.cols/3, height=depth.rows;
+    cv::Rect left(0,0,width,height), right(width*2,0,width,height),center(width,0,width,height);
     
     
-    std::cout<<" depth resolution: width: "<< depth.cols << " height: " << depth.rows << std::endl;
+    //std::cout<<" depth resolution: width: "<< depth.cols << " height: " << depth.rows << std::endl;
     
     for(int i=0;i<3;i++)
     {

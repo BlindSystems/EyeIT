@@ -25,6 +25,8 @@
 		                                  cfg.image_streams_configs[(int)rs::stream::depth].min_size.height,
 		                                  rs::format::z16,
 		                                  cfg.image_streams_configs[(int)rs::stream::depth].minimal_frame_rate);
+	//device->enable_stream(rs::stream::color,rs::preset::best_quality);
+	//device->enable_stream(rs::stream::depth,rs::preset::best_quality);
 
 	//handling color image info (for later using)
 	rs::core::image_info colorInfo ;
