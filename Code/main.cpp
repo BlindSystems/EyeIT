@@ -27,21 +27,25 @@
   #include "or_data_interface.h"
 #include "or_configuration_interface.h"
 
+#define LAYERS_NUM 3
+
   //mraa
   mraa::Gpio *gpio;
 
   const char COLOR_WINDOW_NAME[] = "Collision Avoidance";
   const char DEPTH_WINDOW_NAME[] = "Depth View";
-  enum Direction{CENTER=0b1, RIGHT=0b10,LEFT=0b100};
+  
+  enum Obstacle{CENTER=0b010, RIGHT=0b001,LEFT=0b100, NONE=0b000, LEFT_CENTER=0b110, RIGHT_CENTER=0b011, LEFT_RIGHT=0b101, ALL=0b111};
   enum PinNumbers{C=16, R=18,L=20};
+  enum Direction{RIGHT=0, LEFT, STOP, NONE};
   /****create and configure device*******************************/
   rs::core::status initDevice();
 
-  /****checks if there might be a collision**********************/
+  /****checks if theFre might be a collision**********************/
   bool detectCollision(cv::Mat depth);
-  void  voiceORObject(std::string object_name);
+  void voiceORObject(std::string object_name);
   bool detectCollision(cv::Mat depth,cv::Rect roi, int startThresh, int endThresh);
-  void rotateDir(int * collision);
+  void rotateDir(int collision);
   int* directionCol(cv::Mat depth);
   rs::core::correlated_sample_set* GetSampleSet();
   /****get next frame - color and depth**************************/
@@ -50,7 +54,10 @@
   cv::Mat Image2Mat(rs::core::image_interface* image);
   int8_t get_pixel_size(rs::format format);
   rs::core::status initOR();
-  void voiceNavigation(int * collision);
+  void audioMessage(Direction dir);
+  void navigate(int * collisionMap);
+  Direction findDirection(int * map);
+  Direction checkLayer(int layerCollisionMap);
   void rotate(int pinNum, int length);
   void signal_handler(int sig);
 
@@ -192,7 +199,7 @@
 	      }*/
 
 	      int* col=directionCol(depthMat);
-	      rotateDir(col);
+	      navigate(col);
 	      if (( m_frame_number%frame_to_process_or == 0)&& orInitilized &&col[2]!=0){
 		//to recognize objects in case of 2m object only
 		//add bounding box to recognition
@@ -250,56 +257,108 @@
       delete gpio;
       printf("exiting\n");
   }
-    bool startedC=false,startedL=false,startedR=false;
-  void rotateDir(int* collision)
+  
+  bool startedC=false,startedL=false,startedR=false;
+  
+  void navigate(int* collisions_map)
+  {
+    std::cout<<"in navigate"<<std::endl;
+    std::cout<< "layer 0: "<<collisions_map[0]<<std::endl;
+    
+    rotateDir(collisions_map[0]);
+    
+    Direction d = findDirection(collisions_map);
+    if(d != Direction::NONE)
+      audioMessage(d);
+  }
+  Direction findDirection(int * collisions_map)
+  {    
+    if(collisions_map[0] == Obstacle::ALL)
+      return Direction::STOP;
+    
+    if((collisions_map[0] != Obstacle::CENTER) && (collisions_map[0] != Obstacle::LEFT_CENTER) && (collisions_map[0] != Obstacle::RIGHT_CENTER))
+      return Direction::NONE;//there is no obstacle in the center of first layer - no findDirection needed 
+    
+    for(int i=0; i<LAYERS_NUM; i++)
+    {
+      if(checkLayer(collisions_map[i]) == Direction::RIGHT)
+	return Direction::RIGHT;
+      if(checkLayer(collisions_map[i]) == Direction::LEFT)
+	return Direction::LEFT;
+    }
+    return Direction::NONE; //all layers were checked and no blocked direction was found
+  }
+  
+  Direction checkLayer(int layerCollisionMap)
+  {
+    if((layerCollisionMap == Obstacle::RIGHT) || (layerCollisionMap == Obstacle::RIGHT_CENTER))//'right' is blocked
+      return Direction::LEFT;//go to 'left' direction
+    
+      if((layerCollisionMap == Obstacle::LEFT) || (layerCollisionMap == Obstacle::LEFT_CENTER))//'left' is blocked
+    return Direction::RIGHT;//go to 'right' direction
+  
+    return Direction::NONE;//both 'right' and 'left' are free
+  }
+  
+  void audioMessage(Direction d)
+  {
+    if(d == Direction::RIGHT)
+      system("gst-play-1.0 move_right.wav &");
+    else if(d == Direction::LEFT)
+      system("gst-play-1.0 move_left.wav &");
+    else if(d == Direction::STOP)
+      system("gst-play-1.0 stop.wav &");    
+  }
+  void rotateDir(int collision)
   {
 
-    std::cout<<"rotate"<<std::endl;
-      std::cout<<collision[0]<<" "<<Direction::CENTER<<std::endl;
-    if((collision[0] & 0b1)!=0){
-      std::cout<<"Obstacle in Center"<<std::endl;//rotate in center
-      if(!startedC){
+    std::cout<<"in rotate"<<std::endl;
+    std::cout<< "layer 0: "<<collision<<std::endl;
+    
+    if((collision & Obstacle::CENTER)!=0)
+    {
+      std::cout<<"Obstacle in Center"<<std::endl;//obstacle in center
+      if(!startedC)
+	{
 	  startedC=true;
-	    rotate(PinNumbers::C, 1,startedC);
-	    }
+          rotate(PinNumbers::C, 1,startedC);
+	}
     }
-      else{
+    else					//center is free
+    {
 	startedC=false;
 	rotate(PinNumbers::C, 1,startedC);
-      }
-    
+    }
   
-    //
-  
-    if((collision[0] & 0b100)!=0){
-      std::cout<<"Obstacle in Left"<<std::endl;//rotate in left
-	std::cout<<collision[0]<<" "<<Direction::LEFT<<std::endl;
-	if(!startedL){
-	  startedL=true;
+    if((collision & LEFT)!=0)
+    {
+      std::cout<<"Obstacle in Left"<<std::endl;//obstacle in left
+      if(!startedL)
+      {
+	startedL=true;
 	rotate(PinNumbers::L, 1,startedL);
-	}
+      }
     }
-	else{
-	  startedL=false;
+    else
+    {
+      startedL=false;
       rotate(PinNumbers::L, 1,startedL);
-	}
-    
-    
-    if((collision[0] & 0b100)!=0){
-      std::cout<<"Obstacle in Right"<<std::endl;//rotate in right 
-	std::cout<<collision[0]<<Direction::RIGHT<<std::endl;
-	if(!startedR){
-	  startedR=true;
-	rotate(PinNumbers::L, 1,startedR);
-	}
     }
-	else{
-	  startedR=false;
+    
+    if((collision & RIGHT)!=0)
+    {
+      std::cout<<"Obstacle in Right"<<std::endl;//obstacle in right 
+      if(!startedR)
+      {
+	startedR=true;
+	rotate(PinNumbers::L, 1,startedR);
+      }
+    }
+    else
+    {
+      startedR=false;
       rotate(PinNumbers::L, 1,startedR);
-	}
-      
-    if(((collision[0] & 0b1)!=0) && !((collision[0] & 0b10)!=0) && !((collision[0] & 0b100)!=0))
-	  voiceNavigation(collision);
+    }
   }
   void  voiceORObject(std::string object_name)
   {
@@ -339,10 +398,10 @@
        system("gst-play-1.0 opened_door.wav &");
     } 
   }
-  void voiceNavigation(int * collision)
+  void audioMessage(int * collision)
   {
     //====================check level '1' ===================================
-    if((collision[1] & 0b10) && (collision[1] & 0b100))//collition on both right and left dir -> no perference
+    if((collision[1] & 0b10) && (collision[1] & 0b100))//collistion on both right and left dir -> no perference
     {
       system("gst-play-1.0 stop.wav &");
       return;
@@ -828,4 +887,3 @@
 	  return 2;
       }
   }
-
