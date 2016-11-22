@@ -23,9 +23,9 @@
  // #include "or_configuration_interface.h"
  // #include "or_data_interface.h"
  // #include "or_interface.h"
-  #include "or_video_module_impl.h"
-  #include "or_data_interface.h"
-#include "or_configuration_interface.h"
+
+#include "Object_Recognition.h"
+#include "Navigation_Utils.h"
 
 #define LAYERS_NUM 3
 
@@ -35,9 +35,9 @@
   const char COLOR_WINDOW_NAME[] = "Collision Avoidance";
   const char DEPTH_WINDOW_NAME[] = "Depth View";
   
-  enum Obstacle{CENTER=0b010, RIGHT=0b001,LEFT=0b100, NONE=0b000, LEFT_CENTER=0b110, RIGHT_CENTER=0b011, LEFT_RIGHT=0b101, ALL=0b111};
+
   enum PinNumbers{C=16, R=18,L=20};
-  enum Direction{RIGHT=0, LEFT, STOP, NONE};
+
   /****create and configure device*******************************/
   rs::core::status initDevice();
 
@@ -58,27 +58,28 @@
   void navigate(int * collisionMap);
   Direction findDirection(int * map);
   Direction checkLayer(int layerCollisionMap);
+  Direction randomDirection();
   void rotate(int pinNum, int length);
   void signal_handler(int sig);
 
-  rs::device * device;
+
+  
   rs::core::status st;
-  std::unique_ptr<rs::core::context_interface> ctx;
+
   rs::core::video_module_interface::actual_module_config actualModuleConfig;
 
   //================OR Variables===============
-  rs::core::image_info colorInfo,depthInfo;
-  rs::object_recognition::or_video_module_impl impl;
-  rs::object_recognition::or_data_interface* or_data = nullptr;
-  rs::object_recognition::or_configuration_interface* or_configuration = nullptr;
-  //rs::core::correlated_sample_set* m_sample_set;
-  void* m_color_buffer;
-  int m_frame_number;
-  int frame_to_process_or = 50;
-  rs::object_recognition::recognition_data* recognition_data;
-  int array_size;
+
   bool orInitilized=false;
   //===========================================
+  
+    enum Obstacle{CENTER=0b010, RIGHT=0b001,LEFT=0b100, NONE=0b000, LEFT_CENTER=0b110, RIGHT_CENTER=0b011, LEFT_RIGHT=0b101, ALL=0b111};
+    enum Direction{D_RIGHT=0, D_LEFT, STOP, OPEN};
+    
+    int frame_to_process_or = 50;
+    
+
+  Object_Recognition objRecognition;
 
 
   bool isGesture;
@@ -130,6 +131,7 @@
   }
   int main(int argc, char** argv)
   {
+     
      system("gst-play-1.0 welcome.wav &");
       /**********************handle ctrl-c - for proper closing of the camera***********************/
       struct sigaction sigIntHandler;
@@ -160,7 +162,13 @@
       //rs::playback::context context(playback_file_name.c_str());
       rs::core::status st;
       st = initDevice();
-      //st = initOR();
+      st = objRecognition.initOR();
+      if(st == rs::core::status_no_error)
+      {
+	orInitilized = true;
+	objRecognition.startCamera();
+      }
+	
 
       /***********************************configure GUI*********************************************/
       cv::namedWindow(COLOR_WINDOW_NAME, CV_WINDOW_NORMAL);
@@ -171,7 +179,7 @@
       cv::startWindowThread();
 
       /***********************************start streaming*******************************************/
-      while(play && device->is_streaming())
+      while(play && objRecognition.device->is_streaming())
       {
 	  //get frame
 	  m_frame_number++;
@@ -200,111 +208,103 @@
 
 	      int* col=directionCol(depthMat);
 	      navigate(col);
-	      if (( m_frame_number%frame_to_process_or == 0)&& orInitilized &&col[2]!=0){
-		//to recognize objects in case of 2m object only
-		//add bounding box to recognition
-		if(((col[2] & 0b1)!=0) && ((col[2] & 0b10)!=0) && ((col[2] & 0b100)!=0))
-	
-		  or_configuration->set_roi(rs::core::rectF32{0,0,1,1});//all image
-		else if(((col[2] & 0b1)!=0) && !((col[2] & 0b10)!=0) && !((col[2] & 0b100)!=0)) //center only
-		  	  or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});
-		else if(!((col[2] & 0b1)!=0) && ((col[2] & 0b10)!=0) && !((col[2] & 0b100)!=0)) //Left only
-		or_configuration->set_roi(rs::core::rectF32{0,0,0.25,1});
-		else if(!((col[2] & 0b1)!=0) && !((col[2] & 0b10)!=0) && ((col[2] & 0b100)!=0)) //Right only
-		or_configuration->set_roi(rs::core::rectF32{0.75,0,0.25,1});
-		else if(((col[2] & 0b1)!=0) && ((col[2] & 0b10)!=0) && !((col[2] & 0b100)!=0)) //Left & center
-		or_configuration->set_roi(rs::core::rectF32{0,0,0.75,1});
-		else if(((col[2] & 0b1)!=0) && ((col[2] & 0b10)!=0) && !((col[2] & 0b100)!=0)) //Right & center
-		or_configuration->set_roi(rs::core::rectF32{0.25,0,0.75,1});
-		else
-		    or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
-	or_configuration->apply_changes();
-		
-		//int objectID = getORObject();
-		   st = impl.process_sample_set_sync(&sampleSet);
-		   if (st != rs::core::status_no_error)
-			 std::cout<<"error while processing or data"<<std::endl;
-		   else
-		   {
-		     st = or_data->query_single_recognition_result(&recognition_data, array_size);
-		     if (st != rs::core::status_no_error)
-			    std::cout<<"error while quering or data"<<std::endl;
-		     else{
-		       if(recognition_data[0].probability>0.8)
-		       {
-			 std::cout<<or_configuration->query_object_name_by_id(recognition_data[0].label)<<" "<<recognition_data[0].probability*100<<"%"<<std::endl;
-			 //add voice recognition
-			 //cv::Rect cvroi(0.25*colorInfo.width,0.25*colorInfo.height,0.5*colorInfo.width,0.5*colorInfo.height); 
-		 //cv::rectangle(renderImage,cvroi,cv::Scalar(255,0,0),2);
-		 std::stringstream text;
-		 int textHeight = std::max(int(renderImage.rows*0.05), 5);
-		 std::string object_name = or_configuration->query_object_name_by_id(recognition_data[0].label);
-		 text << object_name << ": " << recognition_data[0].probability;
-		 voiceORObject(object_name);
-		 cv::putText(renderImage, text.str(), cv::Point(int(renderImage.cols*0.05), int(renderImage.rows*0.1)), cv::FONT_HERSHEY_PLAIN, std::max(textHeight / 12.0, 0.5), cvScalar(255, 0, 0), 3, CV_AA);
-		 
-		       }
-		     }
-		   }
-	      }
-	      
-	  }
+	      if (( m_frame_number%utl.frame_to_process_or == 0)&& orInitilized &&col[2]!=0)
+	      {
+                  if(objRecognition.set_rect(col[2])!= rs::core::status_no_error)
+		  {
+		    std::cout<<"failed to set roi"<<std::endl;
+		  }
+		  else 
+		  {
+		    objRecognition.process_sample(sample_set);
+		    std::string or_object_name = objRecognition.get_object_name();
+		    if(or_object_name != "")
+		      std::cout<<"or object name : "<<or_object_name<<std::endl;
+		  }
+		      
+    
 
 	  cv::imshow(COLOR_WINDOW_NAME, renderImage);
 	  cv::imshow(DEPTH_WINDOW_NAME, depthMat*200);
       }
       device->stop();
       delete gpio;
-      printf("exiting\n");
+      std::printf("exiting\n");
   }
+  
+
+	      
   
   bool startedC=false,startedL=false,startedR=false;
   
+  //this is the main function to navigate the user, using rotate sensors and audio messages
   void navigate(int* collisions_map)
   {
     std::cout<<"in navigate"<<std::endl;
     std::cout<< "layer 0: "<<collisions_map[0]<<std::endl;
+    std::cout<< "layer 1: "<<collisions_map[1]<<std::endl;
+    std::cout<< "layer 2: "<<collisions_map[2]<<std::endl;
     
     rotateDir(collisions_map[0]);
     
-    Direction d = findDirection(collisions_map);
-    if(d != Direction::NONE)
-      audioMessage(d);
+    Direction dir = findDirection(collisions_map); //find the direction to where the user need to turn by examining 3 layers of the image
+    
+    if(dir != Direction::OPEN)
+    {
+      audioMessage(dir);
+    }
   }
+  
   Direction findDirection(int * collisions_map)
   {    
-    if(collisions_map[0] == Obstacle::ALL)
+    if(collisions_map[0] == Obstacle::ALL) //left,center and right are all blocked by obstacles
       return Direction::STOP;
     
-    if((collisions_map[0] != Obstacle::CENTER) && (collisions_map[0] != Obstacle::LEFT_CENTER) && (collisions_map[0] != Obstacle::RIGHT_CENTER))
-      return Direction::NONE;//there is no obstacle in the center of first layer - no findDirection needed 
+    if((collisions_map[0] & Obstacle::CENTER) == 0) //center is open
+      return Direction::OPEN;//there is no obstacle in the center of first layer - no findDirection needed 
     
-    for(int i=0; i<LAYERS_NUM; i++)
+    for(int i = 0; i < LAYERS_NUM; i++)
     {
-      if(checkLayer(collisions_map[i]) == Direction::RIGHT)
-	return Direction::RIGHT;
-      if(checkLayer(collisions_map[i]) == Direction::LEFT)
-	return Direction::LEFT;
+      if(checkLayer(collisions_map[i]) == Direction::D_RIGHT)
+	return Direction::D_RIGHT;
+      if(checkLayer(collisions_map[i]) == Direction::D_LEFT)
+	return Direction::D_LEFT;
     }
-    return Direction::NONE; //all layers were checked and no blocked direction was found
+    
+    return randomDirection(); //all layers were checked and no blocked direction was found. couldn't get a decision since both left and right are open in all layers. choose direction randomaly
   }
   
   Direction checkLayer(int layerCollisionMap)
   {
-    if((layerCollisionMap == Obstacle::RIGHT) || (layerCollisionMap == Obstacle::RIGHT_CENTER))//'right' is blocked
-      return Direction::LEFT;//go to 'left' direction
+    //if((layerCollisionMap & Obstacle::RIGHT)!=0 && (layerCollisionMap & Obstacle::LEFT)==0)
+    if((layerCollisionMap == Obstacle::RIGHT) || (layerCollisionMap == Obstacle::RIGHT_CENTER))//'right' is blocked and left is open
+      return Direction::D_LEFT;//go to 'left' direction
     
-      if((layerCollisionMap == Obstacle::LEFT) || (layerCollisionMap == Obstacle::LEFT_CENTER))//'left' is blocked
-    return Direction::RIGHT;//go to 'right' direction
+    //if((layerCollisionMap & Obstacle::LEFT)!=0 && (layerCollisionMap & Obstacle::RIGHT)==0)
+    if((layerCollisionMap == Obstacle::LEFT) || (layerCollisionMap == Obstacle::LEFT_CENTER))//'left' is blocked and right is open
+      return Direction::D_RIGHT;//go to 'right' direction
   
-    return Direction::NONE;//both 'right' and 'left' are free
+    if(layerCollisionMap == Obstacle::LEFT_RIGHT)  //both left and right are blocked will choose right/left randomaly. (arbitrary decision: turn right?)
+    {
+      //std::cout<<"in checkLayer, both right and left are blocked. random num is: "<< randomNum <<std::endl;
+      return randomDirection();
+    }
+    return Direction::OPEN;//both 'right' and 'left' are free
+  }
+  
+  Direction randomDirection()
+  {
+    int randomNum = rand()%2;
+    if(randomNum==0)
+	return Direction::D_RIGHT;
+      return Direction::D_LEFT;
   }
   
   void audioMessage(Direction d)
   {
-    if(d == Direction::RIGHT)
+    if(d == Direction::D_RIGHT)
       system("gst-play-1.0 move_right.wav &");
-    else if(d == Direction::LEFT)
+    else if(d == Direction::D_LEFT)
       system("gst-play-1.0 move_left.wav &");
     else if(d == Direction::STOP)
       system("gst-play-1.0 stop.wav &");    
@@ -409,13 +409,13 @@
     
     if((collision[1] & 0b10) && !(collision[1] & 0b100))
     {
-      std::cout<<"Move to your right"<<std::endl;//should be in voice
+      std::cout<<"Move right"<<std::endl;//should be in voice
       system("gst-play-1.0 moveRight.wav &");
       return;
     }
     if((collision[1] & 0b100) && !(collision[1] & 0b10))
     {
-      std::cout<<"Move to your left"<<std::endl;//should be in voice
+      std::cout<<"Move left"<<std::endl;//should be in voice
       system("gst-play-1.0 move_left.wav &");
       
       return;
@@ -424,63 +424,20 @@
   //====================check level '2' ===================================
     if((collision[2] & 0b10) && !(collision[2] & 0b100))
     {
-      std::cout<<"Move to your right"<<std::endl;//should be in voice
+      std::cout<<"Move right"<<std::endl;//should be in voice
       system("gst-play-1.0 moveRight.wav &");
       return;
     }
     if((collision[2] & 0b100) && !(collision[2] & 0b10))
     {
-      std::cout<<"Move to your left"<<std::endl;//should be in voice
+      std::cout<<"Move left"<<std::endl;//should be in voice
       system("gst-play-1.0 move_left.wav &");
       return;
     }
     
 
   }
-  rs::core::status initDevice()
-  {
-      if(!playback)
-      {
-	  ctx.reset(new rs::core::context);
-	  
-      }
-      else ctx.reset(new rs::playback::context(playback_file_name));
-      
-      if (ctx == nullptr)
-	  return rs::core::status_process_failed;
 
-      int deviceCount = ctx->get_device_count();
-      if (deviceCount  == 0)
-      {
-	  printf("No RealSense device connected.\n\n");
-	  return rs::core::status_process_failed;
-      }
-
-      //get pointer the the camera
-      device = ctx->get_device(0);
-      
-      /**********************************create and configure device********************************/
-      //*ctx.reset(new rs::playback::context("/home/maker/Desktop/project/rssdk.rssdk"));
-    // if (ctx->get_device_count() == 0)
-      //{
-	// printf("Error : cant find devices\n");
-	  //exit(EXIT_FAILURE);
-      //}
-
-      //device = ctx->get_device(0); //device memory managed by the context 
-
-      //enable color and depth streams
-      if(!initOR())
-      {
-      device->enable_stream(rs::stream::color,rs::preset::best_quality);
-      //device->enable_stream(rs::stream::fisheye,rs::preset::best_quality);
-      device->enable_stream(rs::stream::depth,rs::preset::best_quality);
-      device->start();
-      }
-      else
-	std::cout<<"Failrd to init OR"<<std::endl;
-    
-  }
   int getORObject(rs::core::rect roi)
   {
     /*
@@ -552,185 +509,7 @@
     
 
       return rs::core::status_no_error;
-  }*/
-  rs::core::status initOR()
-  {
-    // create or implementaion
-	//rs::object_recognition::or_video_module_impl impl;
-
-	//request the first (index 0) supproted module config.
-	rs::core::video_module_interface::supported_module_config cfg;
-	st =impl.query_supported_module_config(0, cfg);
-	if (st != rs::core::status_no_error)
-		return st;
-
-	//enables streams according to the supported configuration
-	device->enable_stream(rs::stream::color, cfg.image_streams_configs[(int)rs::stream::color].min_size.width,
-		                                  cfg.image_streams_configs[(int)rs::stream::color].min_size.height,
-		                                  rs::format::bgr8,
-		                                  cfg.image_streams_configs[(int)rs::stream::color].minimal_frame_rate);
-
-	device->enable_stream(rs::stream::depth, cfg.image_streams_configs[(int)rs::stream::depth].min_size.width,
-		                                  cfg.image_streams_configs[(int)rs::stream::depth].min_size.height,
-		                                  rs::format::z16,
-		                                  cfg.image_streams_configs[(int)rs::stream::depth].minimal_frame_rate);
-
-	//handling color image info (for later using)
-	rs::core::image_info colorInfo ;
-	colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].min_size.height;
-	colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].min_size.width;
-	colorInfo.format = rs::core::pixel_format::bgr8;
-	colorInfo.pitch = colorInfo.width * 3;
-	
-	//handling depth image info (for later using)
-	rs::core::image_info depthInfo;
-	depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].min_size.height;
-	depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].min_size.width;
-	depthInfo.format = rs::core::pixel_format::z16;
-	depthInfo.pitch = depthInfo.width * 2;
-
-	
-	device->start();
-
-
-	// get the extrisics paramters from the camera
-	rs::extrinsics ext  = device->get_extrinsics(rs::stream::depth, rs::stream::color);
-
-	//get color intrinsics
-	rs::intrinsics colorInt = device->get_stream_intrinsics(rs::stream::color);
-
-	//get depth intrinsics
-	rs::intrinsics depthInt = device->get_stream_intrinsics(rs::stream::depth);
-
-	// after getting all parameters from the camera we need to set the actual_module_config 
-	rs::core::video_module_interface::actual_module_config actualConfig;
-
-		//1. copy the extrinsics 
-		memcpy(&actualConfig.image_streams_configs[(int)rs::stream::color].extrinsics, &ext, sizeof(rs::extrinsics));
-
-		//2. copy the color intrinsics 
-		memcpy(&actualConfig.image_streams_configs[(int)rs::stream::color].intrinsics, &colorInt, sizeof(rs::intrinsics));
-
-		//3. copy the depth intrinsics 
-		memcpy(&actualConfig.image_streams_configs[(int)rs::stream::depth].intrinsics, &depthInt, sizeof(rs::intrinsics));
-
-	// handling projection
-	//rs::core::projection_interface* proj = rs::core::projection_interface::create_instance(&colorInt, &depthInt, &ext);
-	//impl.set_projection(proj);
-
-	//setting the selected configuration (after projection)
-	st=impl.set_module_config(actualConfig);
-	if (st != rs::core::status_no_error)
-		return st;
-
-	//create or data object
-	/*rs::object_recognition::or_data_interface* */ or_data = impl.create_output();
-
-	//create or data object
-	/*rs::object_recognition::or_configuration_interface* */ or_configuration = impl.create_active_configuration();
-	
-	//add bounding box to recognition
-	//or_configuration->set_roi(rs::core::rectF32{0.25,0.25,0.5,0.5});
-	//or_configuration->apply_changes();
-	
-	//declare data structure and size for results
-	/*rs::object_recognition::recognition_data* recognition_data;*/
-	/*int array_size;*/
-	orInitilized=true;
-
-    /*
-      rs::core::status st;
-      m_frame_number=0;
-
-      //request the first (index 0) supproted module config.
-      rs::core::video_module_interface::supported_module_config cfg;
-      st = impl.query_supported_module_config(4, cfg);
-      if (st != rs::core::status_no_error)
-	  return st;
-
-      //enables streams according to the supported configuration
-      device->enable_stream(rs::stream::color, cfg.image_streams_configs[(int)rs::stream::color].min_size.width,
-			  cfg.image_streams_configs[(int)rs::stream::color].min_size.height,
-			  rs::format::bgr8,
-			  cfg.image_streams_configs[(int)rs::stream::color].minimal_frame_rate);
-
-      device->enable_stream(rs::stream::depth, cfg.image_streams_configs[(int)rs::stream::depth].min_size.width,
-			  cfg.image_streams_configs[(int)rs::stream::depth].min_size.height,
-			  rs::format::z16,
-			  cfg.image_streams_configs[(int)rs::stream::depth].minimal_frame_rate);
-
-      //handling color image info (for later using)
-      colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].min_size.height;
-      colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].min_size.width;
-      colorInfo.format = rs::core::pixel_format::bgr8;
-      colorInfo.pitch = colorInfo.width * 3;
-
-      //handling depth image info (for later using)
-      depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].min_size.height;
-      depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].min_size.width;
-      depthInfo.format = rs::core::pixel_format::z16;
-      depthInfo.pitch = depthInfo.width * 2;
-      
-      std::cout<<"color :"<<colorInfo.height<<" "<<colorInfo.width<<" "<<(int)colorInfo.format<<" depth "<<depthInfo.height<<" "<<depthInfo.width<<" "<<(int)depthInfo.format<<std::endl;
-
-      device->start();
-
-      //enable auto exposure for color stream
-      device->set_option(rs::option::color_enable_auto_exposure, 1);
-
-      //enable auto exposure for Depth camera stream
-      device->set_option(rs::option::r200_lr_auto_exposure_enabled, 1);
-
-      // get the extrisics paramters from the camera
-      rs::extrinsics ext  = device->get_extrinsics(rs::stream::depth, rs::stream::color);
-      rs::core::extrinsics core_ext;
-
-      //get color intrinsics
-      rs::intrinsics colorInt = device->get_stream_intrinsics(rs::stream::color);
-      rs::core::intrinsics core_colorInt;
-
-      //get depth intrinsics
-      rs::intrinsics depthInt = device->get_stream_intrinsics(rs::stream::depth);
-      rs::core::intrinsics core_depthInt;
-
-      // after getting all parameters from the camera we need to set the actual_module_config
-      rs::core::video_module_interface::actual_module_config actualConfig;
-
-      //1. copy the extrinsics
-      memcpy(&actualConfig.image_streams_configs[(int)rs::stream::color].extrinsics, &ext, sizeof(rs::extrinsics));
-      core_ext =  rs::utils::convert_extrinsics(ext);
-
-      //2. copy the color intrinsics
-      memcpy(&actualConfig.image_streams_configs[(int)rs::stream::color].intrinsics, &colorInt, sizeof(rs::intrinsics));
-      core_colorInt = rs::utils::convert_intrinsics (colorInt);
-
-      //3. copy the depth intrinsics
-      memcpy(&actualConfig.image_streams_configs[(int)rs::stream::depth].intrinsics, &depthInt, sizeof(rs::intrinsics));
-      core_depthInt = rs::utils::convert_intrinsics(depthInt);
-
-
-      // handling projection
-      rs::core::projection_interface* proj = rs::core::projection_interface::create_instance(&core_colorInt, &core_depthInt, &core_ext);
-      actualConfig.projection = proj;
-      //setting the selected configuration (after projection)
-      st=impl.set_module_config(actualConfig);
-      if (st != rs::core::status_no_error)
-	  return st;
-
-      //create or data object
-      or_data = impl.create_output();
-
-      //create or data object
-      or_configuration = impl.create_active_configuration();
-
-      m_sample_set = new rs::core::correlated_sample_set();
-
-      m_sample_set->images[(int)rs::stream::color]=nullptr;
-      m_sample_set->images[(int)rs::stream::depth]=nullptr;
-
-      return rs::core::status_no_error;
-      */
-  }
+  }*/ 
 
   int* directionCol(cv::Mat depth)
   {
@@ -887,3 +666,15 @@
 	  return 2;
       }
   }
+  
+  //to run after getting name of object's name
+  
+  /*std::cout<<or_configuration->query_object_name_by_id(recognition_data[0].label)<<" "<<recognition_data[0].probability*100<<"%"<<std::endl;
+
+		 std::stringstream text;
+		 int textHeight = std::max(int(renderImage.rows*0.05), 5);
+		 return or_configuration->query_object_name_by_id(recognition_data[0].label);
+		 text << object_name << ": " << recognition_data[0].probability;
+		 voiceORObject(object_name);
+		 cv::putText(renderImage, text.str(), cv::Point(int(renderImage.cols*0.05), int(renderImage.rows*0.1)), cv::FONT_HERSHEY_PLAIN, std::max(textHeight / 12.0, 0.5), cvScalar(255, 0, 0), 3, CV_AA);*/		 
+		    

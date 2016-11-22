@@ -14,7 +14,7 @@ set(PROJECT_LINK_LIBS
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++11 -pthread -fPIC -std=c++0x -fexceptions -frtti")
 
-set(SOURCES
+set(SOURCES Object_Recognition.cpp
     main.cpp
 )
 
