@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/maker/build/librealsense_sdk/samples/record_sample/record_sample.cpp
+memory
+-
+iostream
+-
+librealsense/rs.hpp
+-
+rs_sdk.h
+/home/maker/build/librealsense_sdk/samples/record_sample/rs_sdk.h
+

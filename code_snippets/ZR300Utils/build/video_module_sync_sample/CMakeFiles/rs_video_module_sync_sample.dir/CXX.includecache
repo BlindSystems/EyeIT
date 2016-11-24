@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/maker/build/librealsense_sdk/samples/video_module_sync_sample/video_module_sync_sample.cpp
+memory
+-
+vector
+-
+iostream
+-
+unistd.h
+-
+librealsense/rs.hpp
+-
+rs_sdk.h
+/home/maker/build/librealsense_sdk/samples/video_module_sync_sample/rs_sdk.h
+rs/cv_modules/max_depth_value_module/max_depth_value_module.h
+/home/maker/build/librealsense_sdk/samples/video_module_sync_sample/rs/cv_modules/max_depth_value_module/max_depth_value_module.h
+
