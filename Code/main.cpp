@@ -25,7 +25,9 @@
  // #include "or_interface.h"
 
 #include "Object_Recognition.h"
-#include "Navigation_Utils.h"
+#include "NavigationUtils.h"
+#include "ObstacleManager.h"
+#include "AudioManager.h"
 
 #define LAYERS_NUM 3
 
@@ -42,9 +44,8 @@
   rs::core::status initDevice();
 
   /****checks if theFre might be a collision**********************/
-  bool detectCollision(cv::Mat depth);
+
   void voiceORObject(std::string object_name);
-  bool detectCollision(cv::Mat depth,cv::Rect roi, int startThresh, int endThresh);
   void rotateDir(int collision);
   int* directionCol(cv::Mat depth);
   rs::core::correlated_sample_set* GetSampleSet();
@@ -72,14 +73,12 @@
 
   bool orInitilized=false;
   //===========================================
-  
-    enum Obstacle{CENTER=0b010, RIGHT=0b001,LEFT=0b100, NONE=0b000, LEFT_CENTER=0b110, RIGHT_CENTER=0b011, LEFT_RIGHT=0b101, ALL=0b111};
-    enum Direction{D_RIGHT=0, D_LEFT, STOP, OPEN};
-    
-    int frame_to_process_or = 50;
-    
 
+   
   Object_Recognition objRecognition;
+  Obstacle_utils obstacleUtl;
+  AudioManager audioMng;
+  
 
 
   bool isGesture;
@@ -88,6 +87,7 @@
   bool play = true;
   bool playback = true;
   char * playback_file_name;
+  int m_frame_number = 0;
 
   void my_handler(int s)
   {
@@ -131,8 +131,15 @@
   }
   int main(int argc, char** argv)
   {
+    std::cout<<"hi"<<std::endl;
+    
+    //int width =depth.cols/4, height=depth.rows/4;
+    //cv::Rect left(0,height,width,height*3), right(width*3,height,width,height*3),center(width,height,width*2,height*3);
+    
+    objRecognition = Object_Recognition();
+    audioMng = AudioManager();
      
-     system("gst-play-1.0 welcome.wav &");
+    system("gst-play-1.0 welcome.wav &");
       /**********************handle ctrl-c - for proper closing of the camera***********************/
       struct sigaction sigIntHandler;
       sigIntHandler.sa_handler = my_handler;
@@ -148,11 +155,11 @@
       }
       else
       {
-      if(access(argv[1], F_OK) == -1)
-      {    
+	if(access(argv[1], F_OK) == -1)
+	{    
 	  std::cerr << "playback file does not exists" << std::endl;
 	  return -1;
-      }
+        }
 	std::cerr<<"Mode is: Playback" << std::endl;
 	playback_file_name = argv[1];  
 	
@@ -161,21 +168,20 @@
       //create a playback enabled context with a given output file
       //rs::playback::context context(playback_file_name.c_str());
       rs::core::status st;
-      st = initDevice();
+      st = objRecognition.Object_Recognition::initDevice();
       st = objRecognition.initOR();
       if(st == rs::core::status_no_error)
       {
 	orInitilized = true;
-	objRecognition.startCamera();
+	//objRecognition.startCamera();
       }
 	
-
       /***********************************configure GUI*********************************************/
       cv::namedWindow(COLOR_WINDOW_NAME, CV_WINDOW_NORMAL);
-      cv::resizeWindow(COLOR_WINDOW_NAME, 480, 270);
+      cv::resizeWindow(COLOR_WINDOW_NAME, 720, 405);
       cv::namedWindow(DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(DEPTH_WINDOW_NAME, 960, 540);
-      cv::moveWindow(COLOR_WINDOW_NAME,1000,200);
+      cv::moveWindow(COLOR_WINDOW_NAME,200,200);
       cv::startWindowThread();
 
       /***********************************start streaming*******************************************/
@@ -184,31 +190,21 @@
 	  //get frame
 	  m_frame_number++;
 	  rs::core::correlated_sample_set sampleSet;
-	  if (GetNextFrame(device, sampleSet) != 0)
+	  if (GetNextFrame(objRecognition.device, sampleSet) != 0)
 	  {
-	      printf("invalid frame\n");
+	      std::printf("invalid frame\n");
 	      continue;
 	  }
 
 	  cv::Mat renderImage = Image2Mat(sampleSet[rs::core::stream_type::color]);
-	  //cv::Mat renderImage = Image2Mat(sampleSet[rs::core::stream_type::fisheye]);
 	  cv::Mat depthMat = Image2Mat(sampleSet[rs::core::stream_type::depth]);
 	  
 
 	  if(!depthMat.empty())
 	  {
-	      /*if(!detectCollision(depthMat))
-	      {
-		  printf("No Collision Appears!\n");
-	      }
-	      else
-	      {
-		  printf("Collision detected - Avoid it!\n");
-	      }*/
-
-	      int* col=directionCol(depthMat);
+	      int* col=obstacleUtl.directionCol(depthMat);
 	      navigate(col);
-	      if (( m_frame_number%utl.frame_to_process_or == 0)&& orInitilized &&col[2]!=0)
+	      /*if (( m_frame_number%50 == 0)&& orInitilized &&col[2]!=0)//process OR
 	      {
                   if(objRecognition.set_rect(col[2])!= rs::core::status_no_error)
 		  {
@@ -216,25 +212,25 @@
 		  }
 		  else 
 		  {
-		    objRecognition.process_sample(sample_set);
+		    objRecognition.process_sample(sampleSet);
 		    std::string or_object_name = objRecognition.get_object_name();
 		    if(or_object_name != "")
 		      std::cout<<"or object name : "<<or_object_name<<std::endl;
 		  }
 		      
     
-
+	      }*/
+	  }
+	  //cv::rectangle(COLOR_WINDOW_NAME,);
 	  cv::imshow(COLOR_WINDOW_NAME, renderImage);
 	  cv::imshow(DEPTH_WINDOW_NAME, depthMat*200);
       }
-      device->stop();
-      delete gpio;
+      objRecognition.device->stop();
+      //delete gpio;
       std::printf("exiting\n");
   }
   
 
-	      
-  
   bool startedC=false,startedL=false,startedR=false;
   
   //this is the main function to navigate the user, using rotate sensors and audio messages
@@ -245,7 +241,7 @@
     std::cout<< "layer 1: "<<collisions_map[1]<<std::endl;
     std::cout<< "layer 2: "<<collisions_map[2]<<std::endl;
     
-    rotateDir(collisions_map[0]);
+    //rotateDir(collisions_map[0]);
     
     Direction dir = findDirection(collisions_map); //find the direction to where the user need to turn by examining 3 layers of the image
     
@@ -303,11 +299,14 @@
   void audioMessage(Direction d)
   {
     if(d == Direction::D_RIGHT)
-      system("gst-play-1.0 move_right.wav &");
+      audioMng.play(AudioManager::MOVE_RIGHT, m_frame_number);
+      //      system("gst-play-1.0 move_right.wav &");
     else if(d == Direction::D_LEFT)
-      system("gst-play-1.0 move_left.wav &");
+      audioMng.play(AudioManager::MOVE_LEFT,m_frame_number);
+      //system("gst-play-1.0 move_left.wav &");
     else if(d == Direction::STOP)
-      system("gst-play-1.0 stop.wav &");    
+      audioMng.play(AudioManager::STOP,m_frame_number);    
+      //system("gst-play-1.0 stop.wav &");
   }
   void rotateDir(int collision)
   {
@@ -401,34 +400,33 @@
   void audioMessage(int * collision)
   {
     //====================check level '1' ===================================
-    if((collision[1] & 0b10) && (collision[1] & 0b100))//collistion on both right and left dir -> no perference
+    if(collision[1] & Obstacle::LEFT_RIGHT)//collistion on both right and left dir -> no perference
     {
       system("gst-play-1.0 stop.wav &");
       return;
     }
     
-    if((collision[1] & 0b10) && !(collision[1] & 0b100))
+    if(collision[1] & Obstacle::LEFT)
     {
       std::cout<<"Move right"<<std::endl;//should be in voice
       system("gst-play-1.0 moveRight.wav &");
       return;
     }
-    if((collision[1] & 0b100) && !(collision[1] & 0b10))
+    if(collision[1] & Obstacle::RIGHT)
     {
       std::cout<<"Move left"<<std::endl;//should be in voice
       system("gst-play-1.0 move_left.wav &");
-      
       return;
     }
     
   //====================check level '2' ===================================
-    if((collision[2] & 0b10) && !(collision[2] & 0b100))
+    if(!(collision[2] & Obstacle::RIGHT))
     {
       std::cout<<"Move right"<<std::endl;//should be in voice
       system("gst-play-1.0 moveRight.wav &");
       return;
     }
-    if((collision[2] & 0b100) && !(collision[2] & 0b10))
+    if(!(collision[2] & Obstacle::LEFT))
     {
       std::cout<<"Move left"<<std::endl;//should be in voice
       system("gst-play-1.0 move_left.wav &");
@@ -438,40 +436,7 @@
 
   }
 
-  int getORObject(rs::core::rect roi)
-  {
-    /*
-    //or_configuration->set_roi(&roi);
-  // or_configuration->apply_changes();
-    
-    //declare data structure and size for results
-    
-    //rs::core::correlated_sample_set* sample_set = GetSampleSet();
-    
-    recognition_data = nullptr;
-
-    
-    {
-      st = impl.process_sample_set_sync(sample_set);
-      if (st != rs::core::status_no_error)
-	  return 1;
-
-      //retrieve recognition data from the or_data object
-      int array_size;
-      st =or_data->query_single_recognition_result(&recognition_data, array_size);
-      if (st != rs::core::status_no_error)
-	  return 1;
-      if(recognition_data[0].probability>0.85)
-	return recognition_data[0].label;
-    }
-
-  //print out the recognition results
-  if (recognition_data)
-  {
-  //    console_view.draw_results(recognition_data, array_size,or_configuration);
-  }
-  */
-  }
+  
 
   void release_images()
   { /*
@@ -511,57 +476,7 @@
       return rs::core::status_no_error;
   }*/ 
 
-  int* directionCol(cv::Mat depth)
-  {
-    int* returnCode=new int[3]{0,0,0};
-    int width =depth.cols/4, height=depth.rows/4;
-    cv::Rect left(0,height,width,height*3), right(width*3,height,width,height*3),center(width,height,width*2,height*3);
-    for(int i=0;i<3;i++)
-    {
-      if(detectCollision(depth,center,i*1000,(i+1)*1000)){
-	returnCode[i]|=0b1;
-	std::cout<<"collision in center"<<std::endl;
-      }
-      if(detectCollision(depth,right,i*1000,(i+1)*1000)){
-	returnCode[i]|=0b10;
-	std::cout<<"collision in right"<<std::endl;
-      }
-      
-      if(detectCollision(depth,left,i*1000,(i+1)*1000)){
-	returnCode[i]|=0b100;
-      std::cout<<"collision in left"<<std::endl;
-	
-      }
-      std::cout<<returnCode[i]<<std::endl;
-    }
-      
-    return returnCode;
-      
-  }
-  bool detectCollision(cv::Mat depth, cv::Rect roi, int startThresh, int endThresh)//,cv::Rect roi,int startThresh, int endThresh)
-  {
-      /***************************checks if there might be a collision******************************/
-      //rect from 0-80 in the height, and 50-220 in the width
-      //cv::Rect roi(50,160,220,80);
-      //std::cout<<roi.x<<" "<<roi.y<<" "<<roi.width<<" "<<roi.height<<" "<<std::endl;
-  //cv::rectangle(depth,roi,cv::Scalar(255,0,0),3);
-  //cv::imshow(COLOR_WINDOW_NAME,depth*200);
-  //sleep(500);
-  //cv::waitKey(0);
-      cv::Mat fov(depth(roi));
-      cv::Mat m = fov == 0.0;
-      cv::Mat thresh=fov<endThresh & fov>startThresh & fov!=0.0;
-      //cv::Mat thresh=fov<startThresh &fov>endThresh &fov!=0.0;
 
-      int close_pixels =cv::countNonZero(thresh);
-
-      if((float)close_pixels/((float)roi.width*roi.height )>0.3)
-	  return true;
-      int falseData = cv::countNonZero(m);
-      if((float)falseData/((float)roi.width*roi.height )>0.7)
-	  return true;
-      return false;
-  }
 
   int GetNextFrame(rs::device* device, rs::core::correlated_sample_set& sample_set)
   {

@@ -1,6 +1,6 @@
 #include "Object_Recognition.h"
 
-  Object_Recognition::Object_Recognition(){};
+  Object_Recognition::Object_Recognition(){}
 
   rs::core::status Object_Recognition::initOR()
   {
@@ -83,17 +83,17 @@
   {
     
     rs::core::status st;
-      if((thirdlayer & Obstacle.ALL)!=0)
+      if((thirdlayer & Obstacle::ALL)!=0)
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,1,1});//all image
-      else if((thirdlayer & Obstacle.CENTER)!=0) //center only
+      else if((thirdlayer & Obstacle::CENTER)!=0) //center only
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});
-      else if((thirdlayer & Obstacle.LEFT)!=0)  //Left only
+      else if((thirdlayer & Obstacle::LEFT)!=0)  //Left only
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.25,1});
-      else if((thirdlayer & Obstacle.RIGHT)!=0) //Right only
+      else if((thirdlayer & Obstacle::RIGHT)!=0) //Right only
 	st = or_configuration->set_roi(rs::core::rectF32{0.75,0,0.25,1});
-      else if((thirdlayer & Obstacle.LEFT_CENTER)!=0)//Left & center
+      else if((thirdlayer & Obstacle::LEFT_CENTER)!=0)//Left & center
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.75,1});
-      else if((thirdlayer & Obstacle.RIGHT_CENTER)!=0)//Right & center
+      else if((thirdlayer & Obstacle::RIGHT_CENTER)!=0)//Right & center
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.75,1});
       else
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
@@ -105,7 +105,7 @@
       return st;  
   }
   
-  rs::core::status Object_Recognition::process_image(rs::core::correlated_sample_set& sample_set)
+  rs::core::status Object_Recognition::process_sample(rs::core::correlated_sample_set& sample_set)
   {
     return impl.process_sample_set_sync(&sample_set);
   }
@@ -163,10 +163,10 @@
   }
   void Object_Recognition::startCamera()
   {
-      device->enable_stream(rs::stream::color,rs::preset::best_quality);
+      //device->enable_stream(rs::stream::color,rs::preset::best_quality);
       //device->enable_stream(rs::stream::fisheye,rs::preset::best_quality);
-      device->enable_stream(rs::stream::depth,rs::preset::best_quality);
-      device->start();
+      //device->enable_stream(rs::stream::depth,rs::preset::best_quality);
+      //device->start();
   }
   
   

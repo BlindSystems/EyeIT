@@ -1,5 +1,5 @@
-  #ifndef OBJECT_RECOGNITION_H
-  #define OBJECT_RECOGNITIO_H 
+  #ifndef OBJECTRECOGNITION_H
+  #define OBJECTRECOGNITIO_H 
 
   #include <sys/types.h>
   #include <sys/stat.h>
@@ -30,7 +30,7 @@
 #include "or_data_interface.h"
 #include "or_configuration_interface.h"
 
-#include "Navigation_Utils.h"
+#include "NavigationUtils.h"
 
 class Object_Recognition
 {
@@ -41,7 +41,7 @@ public:
   void startCamera();
   rs::core::status initOR();
   rs::core::status set_rect(int thirdlayer);
-  rs::core::status process_image(rs::core::correlated_sample_set& sample_set);
+  rs::core::status process_sample(rs::core::correlated_sample_set& sample_set);
   std::string get_object_name();
 
   rs::core::image_info colorInfo,depthInfo;
@@ -59,5 +59,5 @@ public:
   std::unique_ptr<rs::core::context_interface> ctx;
 };
 
-#endif;
+#endif
   
