@@ -1,0 +1,1 @@
+/usr/bin/c++    -g -O0  -D_FORTIFY_SOURCE=2   -Wformat -Wformat-security  -fstack-protector-strong  -fPIE -fPIC -std=c++11 -g    -z noexecstack  -z relro -z now  -pie CMakeFiles/rs_fps_counter_sample.dir/fps_counter_sample.cpp.o  -o ../../bin/debug/rs_fps_counter_sample -rdynamic -lrealsense 

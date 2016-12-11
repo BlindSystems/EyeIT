@@ -1,0 +1,28 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/maker/build/librealsense_sdk/samples/samples_time_sync_sample/samples_time_sync_sample.cpp
+memory
+-
+iostream
+-
+librealsense/rs.hpp
+-
+rs_sdk.h
+/home/maker/build/librealsense_sdk/samples/samples_time_sync_sample/rs_sdk.h
+unistd.h
+-
+thread
+-
+memory
+-
+rs/utils/cyclic_array.h
+/home/maker/build/librealsense_sdk/samples/samples_time_sync_sample/rs/utils/cyclic_array.h
+rs/utils/smart_ptr_helpers.h
+/home/maker/build/librealsense_sdk/samples/samples_time_sync_sample/rs/utils/smart_ptr_helpers.h
+
