@@ -1,1 +1,0 @@
-/usr/bin/c++    --std=c++11 -pthread -fPIC -std=c++0x -O3 -DNDEBUG   CMakeFiles/sample_slam_tutorial_1.dir/cpp/main.cpp.o  -o sample_slam_tutorial_1 -rdynamic -lrs_projection -lrs_image -lrs_playback -lrs_record -lrs_log_utils -lrealsense -lpthread -lrealsense_slam -lSP_Core -ltracker -lopencv_imgproc -lopencv_core 

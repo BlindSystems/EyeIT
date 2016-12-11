@@ -1,1 +1,0 @@
-/usr/bin/c++    -g -O0  -D_FORTIFY_SOURCE=2   -Wformat -Wformat-security  -fstack-protector-strong  -fPIE -fPIC -std=c++11 -g    -z noexecstack  -z relro -z now  -pie CMakeFiles/rs_projection_sample.dir/projection_sample.cpp.o  -o ../../bin/debug/rs_projection_sample -rdynamic -lrealsense -lrs_image -lrs_projection -lopencv_imgproc -lopencv_core 

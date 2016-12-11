@@ -1,1 +1,0 @@
-/usr/bin/c++    -g -O0  -D_FORTIFY_SOURCE=2   -Wformat -Wformat-security  -fstack-protector-strong  -fPIE -fPIC -std=c++11 -g    -z noexecstack  -z relro -z now  -pie CMakeFiles/rs_record_sample.dir/record_sample.cpp.o  -o ../../bin/debug/rs_record_sample -rdynamic -lrs_image -lrs_record -lrs_log_utils -lrealsense -lpthread -lopencv_imgproc -lopencv_core 

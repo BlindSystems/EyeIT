@@ -1,1 +1,0 @@
-/usr/bin/c++    -g -O0  -D_FORTIFY_SOURCE=2   -Wformat -Wformat-security  -fstack-protector-strong  -fPIE -fPIC -std=c++11 -g    -z noexecstack  -z relro -z now  -pie CMakeFiles/rs_playback_sample.dir/playback_sample.cpp.o  -o ../../bin/debug/rs_playback_sample -rdynamic -lrealsense -lrs_image -lrs_playback -lrs_log_utils -lpthread -lopencv_imgproc -lopencv_core 

@@ -1,7 +1,0 @@
-/usr/local/bin/sample_or_tutorial_1
-/usr/local/bin/sample_or_tutorial_2
-/usr/local/bin/sample_or_tutorial_3
-/usr/local/bin/sample_pt_tutorial_1
-/usr/local/bin/sample_pt_tutorial_2
-/usr/local/bin/sample_pt_tutorial_3
-/usr/local/bin/sample_slam_tutorial_1
