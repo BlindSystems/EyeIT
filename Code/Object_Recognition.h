@@ -31,33 +31,37 @@
 #include "or_configuration_interface.h"
 
 #include "NavigationUtils.h"
+#include "ObstacleManager.h"
 
-class Object_Recognition
-{
-public:
+namespace ORUtils{
   
-  Object_Recognition();
-  rs::core::status initDevice();
-  void startCamera();
-  rs::core::status initOR();
-  rs::core::status set_rect(int thirdlayer);
-  rs::core::status process_sample(rs::core::correlated_sample_set& sample_set);
-  std::string get_object_name();
+  class ObjectRecognizer
+  {
+    public:
+      
+      //ObjectRecognizer();
+      rs::core::status initDevice();
+      void startCamera();
+      rs::core::status initOR();
+      rs::core::status set_rect(int thirdlayer);
+      rs::core::status process_sample(rs::core::correlated_sample_set& sample_set);
+      std::string get_object_name();
 
-  rs::core::image_info colorInfo,depthInfo;
-  rs::object_recognition::or_video_module_impl impl;
-  rs::object_recognition::or_data_interface* or_data = nullptr;
-  rs::object_recognition::or_configuration_interface* or_configuration = nullptr;
-  //rs::core::correlated_sample_set* m_sample_set;
-  void* m_color_buffer;
-  int m_frame_number;
+      rs::core::image_info colorInfo,depthInfo;
+      rs::object_recognition::or_video_module_impl impl;
+      rs::object_recognition::or_data_interface* or_data = nullptr;
+      rs::object_recognition::or_configuration_interface* or_configuration = nullptr;
+      //rs::core::correlated_sample_set* m_sample_set;
+      void* m_color_buffer;
+      int m_frame_number;
 
-  rs::object_recognition::recognition_data* recognition_data;
-  int array_size;
-  
-  rs::device * device;
-  std::unique_ptr<rs::core::context_interface> ctx;
-};
+      rs::object_recognition::recognition_data* recognition_data;
+      int array_size;
+      
+      rs::device * device;
+      std::unique_ptr<rs::core::context_interface> ctx;
+  };
+}
 
 #endif
   

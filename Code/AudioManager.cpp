@@ -2,17 +2,17 @@
 #include <limits>
 
 
-AudioManager::AudioManager()
+/*AudioUtils::AudioManager::AudioManager()
 {
   mr = ml = st = d  =0; //all flags start from frame zero
   last_play = 0;
+}*/
 
-}
-void AudioManager::play(int msg, int frame_num)
+void AudioUtils::AudioManager::play(int msg, int frame_num)
 { 
    std::cout<<" in play func"<<std::endl;
   
-  if(msg == Message::MOVE_LEFT)
+  if(msg == MOVE_LEFT)
   {
     
     //if( ((frame_num - ml) > max_delay) /*|| (abs(mr - ml) > min_delay) || (abs(st - ml) > min_delay)*/ || ml==0)
@@ -24,7 +24,7 @@ void AudioManager::play(int msg, int frame_num)
     } 
   }
   
-  if(msg == Message::MOVE_RIGHT)
+  if(msg == MOVE_RIGHT)
   {
     std::cout<<" in play for: right"<<std::endl;
     //if( ((frame_num - mr) > max_delay) /*|| (abs(ml - mr) > min_delay) || (abs(st - mr) > min_delay)*/ || mr == 0)
@@ -35,9 +35,9 @@ void AudioManager::play(int msg, int frame_num)
       return;
     } 
   }
-  if(msg == Message::STOP)
+  if(msg == STOP)
   {
-    if( ((frame_num - st) > max_delay) /*|| (abs(ml - st) > min_delay) || (abs(mr - st) > min_delay)*/ || st == 0)
+    //if( ((frame_num - st) > max_delay) /*|| (abs(ml - st) > min_delay) || (abs(mr - st) > min_delay)*/ || st == 0)
     //if(AudioManager::findSmallestInterval() > min_delay || st == 0)
     {
       std::cout<<" in play for: stop"<<std::endl;
@@ -48,7 +48,8 @@ void AudioManager::play(int msg, int frame_num)
   }
   last_play = frame_num;
 }
-int AudioManager::findSmallestInterval()
+
+int AudioUtils::AudioManager::findSmallestInterval()
 {
   int diff = std::numeric_limits< int >::max();
   if(abs(mr-ml)<diff)

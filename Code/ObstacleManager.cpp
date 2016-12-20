@@ -1,8 +1,9 @@
 #include "ObstacleManager.h"
+#include <iostream>
+#include "opencv2/opencv.hpp"  
   
-  Obstacle_utils::Obstacle_utils(){}
-  
-  int* Obstacle_utils::directionCol(cv::Mat depth)
+   
+  int* ObstacleUtils::ObstacleDetector::directionCol(cv::Mat depth)
   {
     int* returnCode=new int[3]{0,0,0};
     
@@ -37,7 +38,8 @@
     return returnCode;
       
   }
-  bool Obstacle_utils::detectCollision(cv::Mat depth, cv::Rect roi, int startThresh, int endThresh)//,cv::Rect roi,int startThresh, int endThresh)
+  
+  bool ObstacleUtils::ObstacleDetector::detectCollision(cv::Mat depth, cv::Rect roi, int startThresh, int endThresh)//,cv::Rect roi,int startThresh, int endThresh)
   {
       /***************************checks if there might be a collision******************************/
       //rect from 0-80 in the height, and 50-220 in the width
@@ -53,11 +55,11 @@
       //cv::Mat thresh=fov<startThresh &fov>endThresh &fov!=0.0;
 
       int close_pixels =cv::countNonZero(thresh);
-
-      if((float)close_pixels/((float)roi.width*roi.height )>0.3)
-	  return true;
       int falseData = cv::countNonZero(m);
-      if((float)falseData/((float)roi.width*roi.height )>0.7)
+      if((float)close_pixels/((float)roi.width*roi.height - falseData)> percentThresh)
+	  return true;
+
+      if((float)falseData/((float)roi.width*roi.height )> percentHoleThresh )
 	  return true;
       return false;
   }

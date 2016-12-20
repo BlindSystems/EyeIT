@@ -1,8 +1,7 @@
 #include "Object_Recognition.h"
 
-  Object_Recognition::Object_Recognition(){}
-
-  rs::core::status Object_Recognition::initOR()
+  
+  rs::core::status ORUtils::ObjectRecognizer::initOR()
   {
 
         //create or implementaion
@@ -81,21 +80,21 @@
         return st;
   }
   
-  rs::core::status Object_Recognition::set_rect(int thirdlayer)
+  rs::core::status ORUtils::ObjectRecognizer::set_rect(int thirdlayer)
   {
     
     rs::core::status st;
-      if((thirdlayer & Obstacle::ALL)!=0)
+      if((thirdlayer & ObstacleUtils::Obstacle::ALL)!=0)
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,1,1});//all image
-      else if((thirdlayer & Obstacle::CENTER)!=0) //center only
+      else if((thirdlayer & ObstacleUtils::Obstacle::CENTER)!=0) //center only
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});
-      else if((thirdlayer & Obstacle::LEFT)!=0)  //Left only
+      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT)!=0)  //Left only
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.25,1});
-      else if((thirdlayer & Obstacle::RIGHT)!=0) //Right only
+      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT)!=0) //Right only
 	st = or_configuration->set_roi(rs::core::rectF32{0.75,0,0.25,1});
-      else if((thirdlayer & Obstacle::LEFT_CENTER)!=0)//Left & center
+      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT_CENTER)!=0)//Left & center
 	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.75,1});
-      else if((thirdlayer & Obstacle::RIGHT_CENTER)!=0)//Right & center
+      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT_CENTER)!=0)//Right & center
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.75,1});
       else
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
@@ -107,12 +106,12 @@
       return st;  
   }
   
-  rs::core::status Object_Recognition::process_sample(rs::core::correlated_sample_set& sample_set)
+  rs::core::status ORUtils::ObjectRecognizer::process_sample(rs::core::correlated_sample_set& sample_set)
   {
     return impl.process_sample_set_sync(&sample_set);
   }
   
-  std::string Object_Recognition::get_object_name()
+  std::string ORUtils::ObjectRecognizer::get_object_name()
   {
     std::string objects_name = "";
     int array_size;
@@ -130,7 +129,7 @@
     }
   }
   
-    rs::core::status Object_Recognition::initDevice()
+    rs::core::status ORUtils::ObjectRecognizer::initDevice()
     {
       //if(!playback)
       //{
@@ -142,9 +141,10 @@
 	  return rs::core::status_process_failed;
 
       int deviceCount = ctx->get_device_count();
+      
       if (deviceCount  == 0)
       {
-	  printf("No RealSense device connected.\n\n");
+	  std::cout<<"No RealSense device connected"<<std::endl;
 	  return rs::core::status_process_failed;
       }
 
@@ -163,7 +163,7 @@
 
       //enable color and depth streams
   }
-  void Object_Recognition::startCamera()
+  void ORUtils::ObjectRecognizer::startCamera()
   {
       //device->enable_stream(rs::stream::color,rs::preset::best_quality);
       //device->enable_stream(rs::stream::fisheye,rs::preset::best_quality);
