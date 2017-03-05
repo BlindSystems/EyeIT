@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/main.cpp
+memory
+-
+iostream
+-
+rs_sdk.h
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/rs_sdk.h
+unistd.h
+-
+thread
+-
+memory
+-
+sstream
+-
+string
+-
+vector
+-
+opencv2/opencv.hpp
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/opencv2/opencv.hpp
+exception
+-
+limits
+-
+dirent.h
+-
+unistd.h
+-
+sys/stat.h
+-
+sys/types.h
+-
+

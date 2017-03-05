@@ -23,7 +23,7 @@
     
     if(dir != NavigationUtils::Constants::Direction::OPEN)
     {
-      audioMsg.play(dir,0);
+      //audioMsg.play(dir,0);
     }
   }
   

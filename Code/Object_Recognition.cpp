@@ -15,29 +15,29 @@
 		return st;
 
 	//enables streams according to the supported configuration
-	device->enable_stream(rs::stream::color, cfg.image_streams_configs[(int)rs::stream::color].min_size.width,
-		                                  cfg.image_streams_configs[(int)rs::stream::color].min_size.height,
+    device->enable_stream(rs::stream::color, cfg.image_streams_configs[(int)rs::stream::color].size.width,
+                                          cfg.image_streams_configs[(int)rs::stream::color].size.height,
 		                                  rs::format::bgr8,
-		                                  cfg.image_streams_configs[(int)rs::stream::color].minimal_frame_rate);
+                                          cfg.image_streams_configs[(int)rs::stream::color].frame_rate);
 
-	device->enable_stream(rs::stream::depth, cfg.image_streams_configs[(int)rs::stream::depth].min_size.width,
-		                                  cfg.image_streams_configs[(int)rs::stream::depth].min_size.height,
+    device->enable_stream(rs::stream::depth, cfg.image_streams_configs[(int)rs::stream::depth].size.width,
+                                          cfg.image_streams_configs[(int)rs::stream::depth].size.height,
 		                                  rs::format::z16,
-		                                  cfg.image_streams_configs[(int)rs::stream::depth].minimal_frame_rate);
+                                          cfg.image_streams_configs[(int)rs::stream::depth].frame_rate);
 	//device->enable_stream(rs::stream::color,rs::preset::best_quality);
 	//device->enable_stream(rs::stream::depth,rs::preset::best_quality);
 
 	//handling color image info (for later using)
 	rs::core::image_info colorInfo ;
-	colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].min_size.height;
-	colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].min_size.width;
+    colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].size.height;
+    colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].size.width;
 	colorInfo.format = rs::core::pixel_format::bgr8;
 	colorInfo.pitch = colorInfo.width * 3;
 	
 	//handling depth image info (for later using)
 	rs::core::image_info depthInfo;
-	depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].min_size.height;
-	depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].min_size.width;
+    depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].size.height;
+    depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].size.width;
 	depthInfo.format = rs::core::pixel_format::z16;
 	depthInfo.pitch = depthInfo.width * 2;
 
@@ -79,23 +79,59 @@
 	
         return st;
   }
+
+  rs::core::status ORUtils::ObjectRecognizer::set_rect()
+  {
+      rs::core::status s1, s2;
+      s1 = or_configuration->set_roi(roi);
+      s2 = or_configuration->apply_changes();
+      if(s1 != rs::core::status_no_error || s2 != rs::core::status_no_error)
+          return rs::core::status_data_not_changed;
+      return rs::core::status_no_error;
+
+  }
+
+  void ORUtils::ObjectRecognizer::create_roi(int x, int y, int width, int height)
+  {
+      roi.x = x;
+      roi.y = y;
+      roi.width = width;
+      roi.height = height;
+  }
+
+  void ORUtils::ObjectRecognizer::find_objects(rs::core::correlated_sample_set& sample_set)
+  {
+      if(set_rect() != rs::core::status_no_error)
+          return;
+      if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
+      //if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
+          return;
+      if(or_data->query_single_recognition_result(&recognition_data,array_size) != rs::core::status_no_error)
+          return;
+      audio.is_OR_playing = true;
+      audio.play(or_configuration->query_object_name_by_id(recognition_data[0].label));
+      audio.is_OR_playing = false;
+
+  }
+
   
   rs::core::status ORUtils::ObjectRecognizer::set_rect(int thirdlayer)
   {
     
     rs::core::status st;
+    /*
       if((thirdlayer & ObstacleUtils::Obstacle::ALL)!=0)
-	st = or_configuration->set_roi(rs::core::rectF32{0,0,1,1});//all image
+    st = or_configuration->set_roi(rs::core::rect{0,0,1,1});//all image
       else if((thirdlayer & ObstacleUtils::Obstacle::CENTER)!=0) //center only
-	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});
+    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.2,1});
       else if((thirdlayer & ObstacleUtils::Obstacle::LEFT)!=0)  //Left only
-	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.25,1});
+    st = or_configuration->set_roi(rs::core::rect{0,0,0.25,1});
       else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT)!=0) //Right only
-	st = or_configuration->set_roi(rs::core::rectF32{0.75,0,0.25,1});
+    st = or_configuration->set_roi(rs::core::rect{0.75,0,0.25,1});
       else if((thirdlayer & ObstacleUtils::Obstacle::LEFT_CENTER)!=0)//Left & center
-	st = or_configuration->set_roi(rs::core::rectF32{0,0,0.75,1});
+    st = or_configuration->set_roi(rs::core::rect{0,0,0.75,1});
       else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT_CENTER)!=0)//Right & center
-	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.75,1});
+    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.75,1});
       else
 	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
       
@@ -103,12 +139,16 @@
 	return st;
 	  
       st = or_configuration->apply_changes();
+      */
       return st;  
   }
   
   rs::core::status ORUtils::ObjectRecognizer::process_sample(rs::core::correlated_sample_set& sample_set)
   {
-    return impl.process_sample_set_sync(&sample_set);
+    //return impl.process_sample_set_sync(&sample_set);
+    //return impl.process_sample_set(&sample_set);
+    rs::core::status st;
+    return st;
   }
   
   std::string ORUtils::ObjectRecognizer::get_object_name()

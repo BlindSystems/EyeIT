@@ -10,7 +10,7 @@
   #include <thread>
 
   //====MRAA includes
-  #include "mraa.hpp"
+  //#include "mraa.hpp"
   #include <csignal>  //Library from the C/++ standard libraries to allow for clean exits.
   #include <cstdlib>  //
   #include <unistd.h> //
@@ -46,6 +46,9 @@ namespace ORUtils{
       rs::core::status set_rect(int thirdlayer);
       rs::core::status process_sample(rs::core::correlated_sample_set& sample_set);
       std::string get_object_name();
+      void find_objects(rs::core::correlated_sample_set& sample_set);
+      void create_roi(int x, int y, int width, int height);
+      rs::core::status set_rect();
 
       rs::core::image_info colorInfo,depthInfo;
       rs::object_recognition::or_video_module_impl impl;
@@ -55,11 +58,14 @@ namespace ORUtils{
       void* m_color_buffer;
       int m_frame_number;
 
+      rs::core::rect roi;
       rs::object_recognition::recognition_data* recognition_data;
       int array_size;
       
       rs::device * device;
       std::unique_ptr<rs::core::context_interface> ctx;
+
+      AudioUtils::AudioManager audio;
   };
 }
 

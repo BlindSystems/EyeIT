@@ -1,0 +1,7 @@
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/install.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/list_install_components.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/rebuild_cache.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/offlineReader.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/install/strip.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/install/local.dir
+/home/ntuser-chavy/Desktop/Project/EyeIT/Code/tools/offlineReader/build/CMakeFiles/edit_cache.dir
