@@ -10,81 +10,75 @@
 }*/
 void AudioUtils::AudioManager::init()
 {
-    createMsgVec();
+
 }
 
-void AudioUtils::AudioManager::createMsgVec()
-{
-    std::pair<Message, std::string> p;
 
-//    p.first = WELCOME;
-//    p.second = "welcome";
-//    v_messages.push_back(p);
 
-//    p.first = WELCOME;
-//    p.second = "welcome";
-//    v_messages.push_back(p);
-
-//    p.first = WELCOME;
-//    p.second = "welcome";
-//    v_messages.push_back(p);
-
-//    p.first = WELCOME;
-//    p.second = "welcome";
-//    v_messages.push_back(p);
-
-//    p.first = WELCOME;
-//    p.second = "welcome";
-//    v_messages.push_back(p);
-}
-
-void AudioUtils::AudioManager::play(std::string message/*Message msg, int frame_num*/)
+void AudioUtils::AudioManager::play(std::string msg/*Message msg, int frame_num*/)
 { 
-    std::string sound_message =  "espeak -v en '"+message+"'";
-    const char * sound = sound_message.c_str();
-    system(sound);
+    //=============text to speach option=====================================================//
+
+    if(!is_OR_playing)
+    {
+        std::string sound_message =  "espeak -v en '"+msg+"'";
+        const char * sound = sound_message.c_str();
+        system(sound);
+    }
+    else is_OR_playing = false;
 
 
-//   std::cout<<" in play func"<<std::endl;
-//   std::istringstream command;
-//   command >> "gst-play-1.0 " >> m_messages[msg] >> ".wav &";
-//   system (command);
+
+
+
+
+    //=============recorded audio option========================================================//
+
+//    if(!is_OR_playing)
+//    {
   
-//  if(msg == MOVE_LEFT)
+//  if(msg == "move left")
 //  {
     
 //    //if( ((frame_num - ml) > max_delay) /*|| (abs(mr - ml) > min_delay) || (abs(st - ml) > min_delay)*/ || ml==0)
 //    //if(AudioManager::findSmallestInterval() > min_delay || ml == 0)
 //    {
 //      system("gst-play-1.0 move_left.wav &");
-//      ml = frame_num;
+//      //ml = frame_num;
 //      return;
 //    }
 //  }
   
-//  if(msg == MOVE_RIGHT)
+//  if(msg == "move_right")
 //  {
 //    std::cout<<" in play for: right"<<std::endl;
 //    //if( ((frame_num - mr) > max_delay) /*|| (abs(ml - mr) > min_delay) || (abs(st - mr) > min_delay)*/ || mr == 0)
 //    //if(AudioManager::findSmallestInterval() > min_delay || mr == 0)
 //    {
 //      system("gst-play-1.0 move_right.wav &");
-//      mr = frame_num;
+//      //mr = frame_num;
 //      return;
 //    }
 //  }
-//  if(msg == STOP)
+//  if(msg == "stop")
 //  {
 //    //if( ((frame_num - st) > max_delay) /*|| (abs(ml - st) > min_delay) || (abs(mr - st) > min_delay)*/ || st == 0)
 //    //if(AudioManager::findSmallestInterval() > min_delay || st == 0)
 //    {
 //      std::cout<<" in play for: stop"<<std::endl;
 //      system("gst-play-1.0 stop.wav &");
-//      st = frame_num;
+//      //st = frame_num;
 //      return;
 //    }
 //  }
-//  last_play = frame_num;
+//  if(msg == "welcome")
+//  {
+//      system("gst-play-1.0 welcome.wav &");
+
+//  }
+//    }
+//    else is_OR_playing = false;
+  //last_play = frame_num;
 }
 
 /*oid  voiceORObject(std::string object_name)
@@ -126,6 +120,17 @@ void AudioUtils::AudioManager::play(std::string message/*Message msg, int frame_
      system("gst-play-1.0 opened_door.wav &");
   }
 }*/
+
+
+
+
+//   std::cout<<" in play func"<<std::endl;
+//   std::istringstream command;
+//   command >> "gst-play-1.0 " >> m_messages[msg] >> ".wav &";
+//   system (command);
+
+
+
 
 int AudioUtils::AudioManager::findSmallestInterval()
 {

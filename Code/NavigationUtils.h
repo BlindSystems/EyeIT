@@ -20,7 +20,7 @@ namespace NavigationUtils{
     public:
       
        //Navigator();
-       void navigate(int* collisions_map);
+       std::string navigate(int* collisions_map);
        NavigationUtils::Constants::Direction findDirection(int * collisions_map);
        NavigationUtils::Constants::Direction checkLayer(int layer);
        NavigationUtils::Constants::Direction randomDirection();

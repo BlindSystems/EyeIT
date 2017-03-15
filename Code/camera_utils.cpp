@@ -6,6 +6,7 @@
 #include "camera_utils.h"
 #include "rs_sdk.h"
 #include <opencv2/imgproc.hpp>
+#include <iostream>
 camera_utils::camera_utils() : m_mode(LIVE_STREAM)
 {
 }
@@ -68,6 +69,8 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
         int	config_idx = 0;
         while (impl.query_supported_module_config(config_idx , cfg) == rs::core::status_no_error)
         {
+        std::cout<<"conf: "<<config_idx<<" color : "<<cfg.image_streams_configs[(int)rs::stream::color].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::color].size.height<<" depth : "<<cfg.image_streams_configs[(int)rs::stream::depth].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::depth].size.height<< " fps color: "<<cfg.image_streams_configs[(int)rs::stream::color].frame_rate
+               <<"fps depth "<<cfg.image_streams_configs[(int)rs::stream::depth].frame_rate<<std::endl;
         if (width[0] == cfg.image_streams_configs[(int)rs::stream::color].size.width && height[0] == cfg.image_streams_configs[(int)rs::stream::color].size.height
             && width[1] == cfg.image_streams_configs[(int)rs::stream::depth].size.width && height[1] == cfg.image_streams_configs[(int)rs::stream::depth].size.height
             && fps[0] == cfg.image_streams_configs[(int)rs::stream::color].frame_rate

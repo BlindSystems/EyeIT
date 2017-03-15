@@ -71,11 +71,15 @@
 	//impl.set_projection(proj);
 
 	//setting the selected configuration (after projection)
+
+
+
 	st=impl.set_module_config(actualConfig);
 	if (st != rs::core::status_no_error)
 		return st;
         or_data = impl.create_output();
         or_configuration = impl.create_active_configuration();
+        or_configuration->set_compute_engine(rs::object_recognition::compute_engine::GPU);
 	
         return st;
   }
@@ -104,112 +108,113 @@
       if(set_rect() != rs::core::status_no_error)
           return;
       if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
-      //if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
           return;
       if(or_data->query_single_recognition_result(&recognition_data,array_size) != rs::core::status_no_error)
           return;
-      audio.is_OR_playing = true;
-      audio.play(or_configuration->query_object_name_by_id(recognition_data[0].label));
-      audio.is_OR_playing = false;
-
-  }
-
-  
-  rs::core::status ORUtils::ObjectRecognizer::set_rect(int thirdlayer)
-  {
-    
-    rs::core::status st;
-    /*
-      if((thirdlayer & ObstacleUtils::Obstacle::ALL)!=0)
-    st = or_configuration->set_roi(rs::core::rect{0,0,1,1});//all image
-      else if((thirdlayer & ObstacleUtils::Obstacle::CENTER)!=0) //center only
-    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.2,1});
-      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT)!=0)  //Left only
-    st = or_configuration->set_roi(rs::core::rect{0,0,0.25,1});
-      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT)!=0) //Right only
-    st = or_configuration->set_roi(rs::core::rect{0.75,0,0.25,1});
-      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT_CENTER)!=0)//Left & center
-    st = or_configuration->set_roi(rs::core::rect{0,0,0.75,1});
-      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT_CENTER)!=0)//Right & center
-    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.75,1});
-      else
-	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
-      
-      if(st != rs::core::status_no_error)
-	return st;
-	  
-      st = or_configuration->apply_changes();
-      */
-      return st;  
-  }
-  
-  rs::core::status ORUtils::ObjectRecognizer::process_sample(rs::core::correlated_sample_set& sample_set)
-  {
-    //return impl.process_sample_set_sync(&sample_set);
-    //return impl.process_sample_set(&sample_set);
-    rs::core::status st;
-    return st;
-  }
-  
-  std::string ORUtils::ObjectRecognizer::get_object_name()
-  {
-    std::string objects_name = "";
-    int array_size;
-    if (or_data->query_single_recognition_result(&recognition_data, array_size) != rs::core::status_no_error)
-    {
-      std::cout<<"error while quering or data"<<std::endl;
-      return objects_name;
-    }
-		   
-    if(recognition_data[0].probability>0.8)
-    {
-      objects_name = or_configuration->query_object_name_by_id(recognition_data[0].label);
-      std::cout<<"found an object with high probability : "<<objects_name<<" prob: "<<recognition_data[0].probability<<std::endl;
-      return objects_name;
-    }
-  }
-  
-    rs::core::status ORUtils::ObjectRecognizer::initDevice()
-    {
-      //if(!playback)
-      //{
-	  ctx.reset(new rs::core::context);  
-      //}
-      //else ctx.reset(new rs::playback::context(playback_file_name));
-      
-      if (ctx == nullptr)
-	  return rs::core::status_process_failed;
-
-      int deviceCount = ctx->get_device_count();
-      
-      if (deviceCount  == 0)
+      if(or_configuration->query_object_name_by_id(recognition_data[0].probability>0.5))
       {
-	  std::cout<<"No RealSense device connected"<<std::endl;
-	  return rs::core::status_process_failed;
+         audio.play(or_configuration->query_object_name_by_id(recognition_data[0].label));
+         audio.is_OR_playing = true;
       }
 
-      //get pointer the the camera
-      device = ctx->get_device(0);
+  }
+
+  
+//  rs::core::status ORUtils::ObjectRecognizer::set_rect(int thirdlayer)
+//  {
+    
+//    rs::core::status st;
+//    /*
+//      if((thirdlayer & ObstacleUtils::Obstacle::ALL)!=0)
+//    st = or_configuration->set_roi(rs::core::rect{0,0,1,1});//all image
+//      else if((thirdlayer & ObstacleUtils::Obstacle::CENTER)!=0) //center only
+//    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.2,1});
+//      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT)!=0)  //Left only
+//    st = or_configuration->set_roi(rs::core::rect{0,0,0.25,1});
+//      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT)!=0) //Right only
+//    st = or_configuration->set_roi(rs::core::rect{0.75,0,0.25,1});
+//      else if((thirdlayer & ObstacleUtils::Obstacle::LEFT_CENTER)!=0)//Left & center
+//    st = or_configuration->set_roi(rs::core::rect{0,0,0.75,1});
+//      else if((thirdlayer & ObstacleUtils::Obstacle::RIGHT_CENTER)!=0)//Right & center
+//    st = or_configuration->set_roi(rs::core::rect{0.25,0,0.75,1});
+//      else
+//	st = or_configuration->set_roi(rs::core::rectF32{0.25,0,0.2,1});//center only
       
-      /**********************************create and configure device********************************/
-      //*ctx.reset(new rs::playback::context("/home/maker/Desktop/project/rssdk.rssdk"));
-    // if (ctx->get_device_count() == 0)
-      //{
-	// printf("Error : cant find devices\n");
-	  //exit(EXIT_FAILURE);
-      //}
+//      if(st != rs::core::status_no_error)
+//	return st;
+	  
+//      st = or_configuration->apply_changes();
+//      */
+//      return st;
+//  }
+  
+//  rs::core::status ORUtils::ObjectRecognizer::process_sample(rs::core::correlated_sample_set& sample_set)
+//  {
+//    //return impl.process_sample_set_sync(&sample_set);
+//    //return impl.process_sample_set(&sample_set);
+//    rs::core::status st;
+//    return st;
+//  }
+  
+//  std::string ORUtils::ObjectRecognizer::get_object_name()
+//  {
+//    std::string objects_name = "";
+//    int array_size;
+//    if (or_data->query_single_recognition_result(&recognition_data, array_size) != rs::core::status_no_error)
+//    {
+//      std::cout<<"error while quering or data"<<std::endl;
+//      return objects_name;
+//    }
+		   
+//    if(recognition_data[0].probability>0.8)
+//    {
+//      objects_name = or_configuration->query_object_name_by_id(recognition_data[0].label);
+//      std::cout<<"found an object with high probability : "<<objects_name<<" prob: "<<recognition_data[0].probability<<std::endl;
+//      return objects_name;
+//    }
+//  }
+  
+//    rs::core::status ORUtils::ObjectRecognizer::initDevice()
+//    {
+//      //if(!playback)
+//      //{
+//	  ctx.reset(new rs::core::context);
+//      //}
+//      //else ctx.reset(new rs::playback::context(playback_file_name));
+      
+//      if (ctx == nullptr)
+//	  return rs::core::status_process_failed;
 
-      //device = ctx->get_device(0); //device memory managed by the context 
+//      int deviceCount = ctx->get_device_count();
+      
+//      if (deviceCount  == 0)
+//      {
+//	  std::cout<<"No RealSense device connected"<<std::endl;
+//	  return rs::core::status_process_failed;
+//      }
 
-      //enable color and depth streams
-  }
-  void ORUtils::ObjectRecognizer::startCamera()
-  {
-      //device->enable_stream(rs::stream::color,rs::preset::best_quality);
-      //device->enable_stream(rs::stream::fisheye,rs::preset::best_quality);
-      //device->enable_stream(rs::stream::depth,rs::preset::best_quality);
-      //device->start();
-  }
+//      //get pointer the the camera
+//      device = ctx->get_device(0);
+      
+//      /**********************************create and configure device********************************/
+//      //*ctx.reset(new rs::playback::context("/home/maker/Desktop/project/rssdk.rssdk"));
+//    // if (ctx->get_device_count() == 0)
+//      //{
+//	// printf("Error : cant find devices\n");
+//	  //exit(EXIT_FAILURE);
+//      //}
+
+//      //device = ctx->get_device(0); //device memory managed by the context
+
+//      //enable color and depth streams
+//  }
+//  void ORUtils::ObjectRecognizer::startCamera()
+//  {
+//      //device->enable_stream(rs::stream::color,rs::preset::best_quality);
+//      //device->enable_stream(rs::stream::fisheye,rs::preset::best_quality);
+//      //device->enable_stream(rs::stream::depth,rs::preset::best_quality);
+//      //device->start();
+//  }
   
   
   

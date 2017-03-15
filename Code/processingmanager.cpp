@@ -27,13 +27,7 @@ cv::Mat ProcessingManager::createVDisparity(cv::Mat image, int depth_width)
             std::cout << "problem: in vDisparity the row: " << i << " has in total " << counter << " values, not " << image.cols << std::endl;
         counter = 0;
     }
-
-    //std::string vDisparityName = "_vDisparity.png";
-    //std::string full_path = folder_name + vDisparityName;
-    //vDisparity = vDisparity * (255/depth_width);
     vDisparity.convertTo(vDisparity, CV_8UC3);
-
-    //bool b = cv::imwrite(full_path, vDisparity);
     return vDisparity;
 }
 
@@ -63,16 +57,12 @@ cv::Mat ProcessingManager::createGroundMap(cv::Mat vDisparity, cv::Mat depthMat)
                     for (int k = 0; k < depthMat.cols + 0; k++)
                     {
                         if (abs(depthMat.at<uchar>(cv::Point(k, y)) - x) < 10)
-                            depthMat.at<uchar>(cv::Point(k, y)) = 0;
+                            depthMat.at<uchar>(cv::Point(k, y)) = 0;//for saperating between close obstacles (0) to ground (1)
                     }
 
                 }
             }
         }
     }
-
     return depthMat;
-    //imshow("ground map", depthMat);
-    //std::string seedMapName = image_name.substr(0, image_name.size() - 4) + "_small_TH1_groundMap.png";
-    //imwrite(folder_name + seedMapName, depthMat);
 }

@@ -10,7 +10,7 @@
   }*/
   
   //this is the main function to navigate the user, using rotate sensors and audio messages
-  void NavigationUtils::Navigator::navigate(int* collisions_map)
+  std::string NavigationUtils::Navigator::navigate(int* collisions_map)
   {
     std::cout<<"in navigate"<<std::endl;
     std::cout<< "layer 0: "<<collisions_map[0]<<std::endl;
@@ -21,10 +21,24 @@
     
     NavigationUtils::Constants::Direction dir = findDirection(collisions_map); //find the direction to where the user need to turn by examining 3 layers of the image
     
-    if(dir != NavigationUtils::Constants::Direction::OPEN)
+    if(dir == NavigationUtils::Constants::Direction::STOP)
     {
-      //audioMsg.play(dir,0);
+      //audioMsg.play("stop");
+      return "STOP !!!";
     }
+    if(dir == NavigationUtils::Constants::Direction::D_LEFT)
+    {
+      //audioMsg.play("move left");
+      return "MOVE LEFT";
+    }
+    if(dir == NavigationUtils::Constants::Direction::D_RIGHT)
+    {
+      //audioMsg.play("move right");
+      return "MOVE RIGHT";
+    }
+    else
+        return "OPEN";
+
   }
   
   NavigationUtils::Constants::Direction NavigationUtils::Navigator::findDirection(int * collisions_map)

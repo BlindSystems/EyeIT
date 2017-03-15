@@ -15,7 +15,7 @@ public:
 
     DisplayManager();
     void createRects(int colorWidth, int colorHight, int depthWidth, int depthHight);
-    cv::Mat DisplayCollisions(cv::Mat mat, int *  col, bool isDepth);
+    cv::Mat DisplayCollisions(cv::Mat mat, int *  col,std::string navigation_msg,  bool isDepth);
 
     cv::Rect color_right, color_left, color_center, depth_right, depth_left, depth_center;
 

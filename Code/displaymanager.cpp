@@ -5,43 +5,46 @@ DisplayManager::DisplayManager()
 
 }
 
-cv::Mat DisplayManager::DisplayCollisions(cv::Mat mat, int * col, bool isDepth)
+cv::Mat DisplayManager::DisplayCollisions(cv::Mat mat, int * col,std::string navigation_msg, bool isDepth)
 {
     if(isDepth)
     {
+        cv::putText(mat,navigation_msg, cv::Point(depth_center.x+30,30),2,1.0,cv::Scalar(0,255,0),1.5);//write navigation descritption
+
+
         cv::rectangle(mat,depth_left,cv::Scalar(255,0,0),6);//draw left rect
         if((col[0] & ObstacleUtils::Obstacle::LEFT)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point(300,100),2,1.0,cv::Scalar(255,255,255));//draw right rect
+          //cv::putText(mat,"BLOCKED!", cv::Point(300,100),2,1.0,cv::Scalar(255,255,255));//draw right rect
+          cv::putText(mat,"BLOCKED!", cv::Point(depth_left.x+30,100),2,1.0,cv::Scalar(0,0,255),1.5);
 
         cv::rectangle(mat,depth_right,cv::Scalar(255,0,0),6);
         if((col[0] & ObstacleUtils::Obstacle::RIGHT)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point(1500,100),2,1.0,cv::Scalar(255,255,255));
+          //cv::putText(mat,"BLOCKED!", cv::Point(1500,100),2,1.0,cv::Scalar(255,255,255));
+            cv::putText(mat,"BLOCKED!", cv::Point(depth_right.x+30,100),2,1.0,cv::Scalar(0,0,255),1.5);
 
         cv::rectangle(mat,depth_center,cv::Scalar(255,0,0),6);//draw center rect
         if((col[0] & ObstacleUtils::Obstacle::CENTER)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point( 1000,100),2,1.0,cv::Scalar(255,255,255));
+          //cv::putText(mat,"BLOCKED!", cv::Point( 1000,100),2,1.0,cv::Scalar(255,255,255));
+            cv::putText(mat,"BLOCKED!", cv::Point(depth_center.x+30,100),2,1.0,cv::Scalar(0,0,255),1.5);
 
-//        cv::rectangle(mat,rec_left_rgb,cv::Scalar(255,0,0),4);
-//        cv::rectangle(mat,rec_right_rgb,cv::Scalar(255,0,0),4);
-//        cv::rectangle(mat,rec_center_rgb,cv::Scalar(255,0,0),4);
     }
     else
     {
+        cv::putText(mat,navigation_msg, cv::Point(color_center.x+160,80),2,2.0,cv::Scalar(0,255,0),4);//write navigation descritption
+
+
         cv::rectangle(mat,color_left,cv::Scalar(255,0,0),6);//draw left rect
         if((col[0] & ObstacleUtils::Obstacle::LEFT)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point(300,100),2,1.0,cv::Scalar(0,255,255));//draw right rect
+          cv::putText(mat,"BLOCKED!", cv::Point(color_left.x+160,230),2,2.0,cv::Scalar(0,0,255),3);//draw right rect
 
         cv::rectangle(mat,color_right,cv::Scalar(255,0,0),6);
         if((col[0] & ObstacleUtils::Obstacle::RIGHT)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point(1500,100),2,1.0,cv::Scalar(0,255,255));
+          cv::putText(mat,"BLOCKED!", cv::Point(color_right.x+160,230),2,2.0,cv::Scalar(0,0,255),3);
 
         cv::rectangle(mat,color_center,cv::Scalar(255,0,0),6);//draw center rect
         if((col[0] & ObstacleUtils::Obstacle::CENTER)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point( 1000,100),2,1.0,cv::Scalar(0,255,255));
+          cv::putText(mat,"BLOCKED!", cv::Point(color_center.x+160,230),2,2.0,cv::Scalar(0,0,255),3);
 
-//        cv::rectangle(mat,rec_left_rgb,cv::Scalar(255,0,0),4);
-//        cv::rectangle(mat,rec_right_rgb,cv::Scalar(255,0,0),4);
-//        cv::rectangle(mat,rec_center_rgb,cv::Scalar(255,0,0),4);
     }
     return mat;
 }
