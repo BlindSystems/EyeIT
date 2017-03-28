@@ -7,6 +7,7 @@ DisplayManager::DisplayManager()
 
 cv::Mat DisplayManager::DisplayCollisions(cv::Mat mat, int * col,std::string navigation_msg, bool isDepth)
 {
+    int i;//erase
     if(isDepth)
     {
         cv::putText(mat,navigation_msg, cv::Point(depth_center.x+30,30),2,1.0,cv::Scalar(0,255,0),1.5);//write navigation descritption
@@ -43,7 +44,7 @@ cv::Mat DisplayManager::DisplayCollisions(cv::Mat mat, int * col,std::string nav
 
         cv::rectangle(mat,color_center,cv::Scalar(255,0,0),6);//draw center rect
         if((col[0] & ObstacleUtils::Obstacle::CENTER)!=0)
-          cv::putText(mat,"BLOCKED!", cv::Point(color_center.x+160,230),2,2.0,cv::Scalar(0,0,255),3);
+         cv::putText(mat,"BLOCKED!", cv::Point(color_center.x+160,230),2,2.0,cv::Scalar(0,0,255),3);
 
     }
     return mat;
@@ -63,5 +64,16 @@ void DisplayManager::createRects(int colorWidth, int colorHight, int depthWidth,
     DisplayManager::color_left = cv::Rect(0,colorHight,colorWidth,colorHight*3);
     DisplayManager::color_right = cv::Rect(colorWidth*2,colorHight,colorWidth,colorHight*3);
     DisplayManager::color_center = cv::Rect(colorWidth,colorHight,colorWidth,colorHight*3);
+}
+
+void DisplayManager::drawRects(cv::Mat &color,rs::core::pointF32* color_points, int num)
+{
+    for(int i = 0; i < num; i+=2)
+    {
+        cv::rectangle(color,cv::Point(color_points[i].x,color_points[i].y),cv::Point(color_points[i+1].x,color_points[i+1].y),cv::Scalar(0,0,255),2);
+        cv::circle(color,cv::Point(color_points[i].x,color_points[i].y),10,cv::Scalar(0,255,0),5);
+        cv::circle(color,cv::Point(color_points[i+1].x,color_points[i+1].y),10,cv::Scalar(0,255,0),5);
+    }
+
 }
 

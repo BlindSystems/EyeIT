@@ -23,17 +23,17 @@
     
     if(dir == NavigationUtils::Constants::Direction::STOP)
     {
-      //audioMsg.play("stop");
+      audioMsg.play("stop");
       return "STOP !!!";
     }
     if(dir == NavigationUtils::Constants::Direction::D_LEFT)
     {
-      //audioMsg.play("move left");
+      audioMsg.play("move_left");
       return "MOVE LEFT";
     }
     if(dir == NavigationUtils::Constants::Direction::D_RIGHT)
     {
-      //audioMsg.play("move right");
+      audioMsg.play("move_right");
       return "MOVE RIGHT";
     }
     else
@@ -51,10 +51,10 @@
     
     for(int i = 0; i < NavigationUtils::Constants::LAYERS_NUM; i++)
     {
-      if(checkLayer(collisions_map[i]) == NavigationUtils::Constants::Direction::D_RIGHT)
+      if(checkLayer(collisions_map[i]) == NavigationUtils::Constants::Direction::D_RIGHT)//center is blocked & right is free
 	return NavigationUtils::Constants::Direction::D_RIGHT;
       if(checkLayer(collisions_map[i]) == NavigationUtils::Constants::Direction::D_LEFT)
-	return NavigationUtils::Constants::Direction::D_LEFT;
+    return NavigationUtils::Constants::Direction::D_LEFT;//center is blocked & left is free
     }
     
     return randomDirection(); //all layers were checked and no blocked direction was found. couldn't get a decision since both left and right are open in all layers. choose direction randomaly

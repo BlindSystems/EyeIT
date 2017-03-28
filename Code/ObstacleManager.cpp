@@ -12,23 +12,23 @@
       cv::Mat obstacle_mat;
       bool * obstacle_array;
       ushort  col_dir;
-      int layer_thickness = 255/(num_of_layers);
+      int layer_thickness = 255/(num_of_layers + 1);
 
       const char MAT_WINDOW_NAME[] = "obstacle mat";
       const char ARRAY_WINDOW_NAME[] = "obstacle array";
 
       cv::namedWindow(MAT_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(MAT_WINDOW_NAME, 480, 270);
-      cv::moveWindow(MAT_WINDOW_NAME,1200,500);
+      cv::moveWindow(MAT_WINDOW_NAME,1200,450);
       cv::namedWindow(ARRAY_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(ARRAY_WINDOW_NAME, 480, 270);
-      cv::moveWindow(ARRAY_WINDOW_NAME,1200,800);
+      cv::moveWindow(ARRAY_WINDOW_NAME,1200,750);
 
 
       for(int i = 0; i<num_of_layers; i++)
       {
 
-          obstacle_mat = get_obstacle_mat(depthMat, 0,100);
+          obstacle_mat = get_obstacle_mat(depthMat, (i+1)*layer_thickness,(i+2)*layer_thickness);
           cv::Mat array = get_obstacle_array(obstacle_mat);
 
           col_dir = get_obstacle_dir(array, i==0?true:false);
@@ -62,7 +62,7 @@
 
       for (int i = 0; i < col_div; i++)
       {
-          for (int j = row_div / 5; j < row_div; j++)
+          for (int j = row_div / 5; j < row_div*0.9; j++)
           {
               rect.x = width*i;
               rect.y = height*j;
@@ -113,15 +113,15 @@ ushort ObstacleUtils::ObstacleDetector::get_obstacle_dir(cv::Mat obstacle_array,
       const char FILTERED_WINDOW_NAME[] = "filtered array";
       cv::namedWindow(FILTERED_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(FILTERED_WINDOW_NAME, 480, 270);
-      cv::moveWindow(FILTERED_WINDOW_NAME,650,800);
+      cv::moveWindow(FILTERED_WINDOW_NAME,650,750);
 
       const char FINAL_WINDOW_NAME[] = "final array";
       cv::namedWindow(FINAL_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(FINAL_WINDOW_NAME, 480, 270);
-      cv::moveWindow(FINAL_WINDOW_NAME,100,800);
+      cv::moveWindow(FINAL_WINDOW_NAME,100,750);
 
 
-      int human_width = col_div / 3;
+      int human_width = col_div / 5;
       int offset = 1;
       int k_size = human_width + 2*offset;
       cv::Mat filtered, kernel = (cv::Mat::ones(1,k_size,CV_32F))/255;

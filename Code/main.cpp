@@ -39,6 +39,8 @@
 
     const char COLOR_WINDOW_NAME[] = "Collision Avoidance";
     const char DEPTH_WINDOW_NAME[] = "Depth View";
+    const char EDGES_WINDOW_NAME[] = "edges";
+    const char CCM_WINDOW_NAME[] = "ccm";
     const char PROCESSED_DEPTH_WINDOW_NAME[] = "processed View";
   
 
@@ -49,7 +51,7 @@
   /****create cv mat with RGB format from image_interface********/
 
   cv::Mat Image2Mat(camera_utils cu, rs::core::pixel_format format);
-  void processOR(rs::core::correlated_sample_set* sample_set);
+  void processOR(rs::core::correlated_sample_set* sample_set,cv::Mat depthMat_original, cv::Mat colorMat);
 
   //================OR Variables===============
 
@@ -69,7 +71,7 @@
   bool play = true;
   bool playback = true;
   char * playback_file_name;
-  int m_frame_number = 0;
+  //int m_frame_number = 0;
 
   void my_handler(int s)
   {
@@ -82,20 +84,24 @@
 	  exit(1);
       }
   }
-
-
-
   
   int main(int argc, char** argv)
   {
 
+      audio.play("welcome");
+      cv::waitKey(1000);
+     // audio.play("instructions");
+      cv::waitKey(500);
+
+
       /***********************************configure GUI*********************************************/
       cv::namedWindow(COLOR_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(COLOR_WINDOW_NAME, 960, 540);
-      cv::moveWindow(COLOR_WINDOW_NAME,100,100);
+      cv::moveWindow(COLOR_WINDOW_NAME,100,50);
       cv::namedWindow(DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
       cv::resizeWindow(DEPTH_WINDOW_NAME, 640, 360);
-      cv::moveWindow(DEPTH_WINDOW_NAME,1100,100);
+      cv::moveWindow(DEPTH_WINDOW_NAME,1100,50);
+
 //      cv::namedWindow(PROCESSED_DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
 //      cv::resizeWindow(PROCESSED_DEPTH_WINDOW_NAME, 640, 360);
 //      cv::moveWindow(PROCESSED_DEPTH_WINDOW_NAME,1400,200);
@@ -114,19 +120,19 @@
 
       rs::core::correlated_sample_set* sample_set;
       int* col = NULL;
-      cv::Mat m_blur,mult, renderImage, depthMat, vDisparity , depthMat_original;
+      cv::Mat m_blur, renderImage, depthMat, vDisparity , depthMat_original,colored_depth;
       std::string navigation_msg;
       char keyPressed =  0;
 
       std::thread t1;
 
-      audio.play("welcome");
+
 
       if (argc < 2)//on live mode
       {
           std::cerr<<"Mode is: Live" << std::endl;
           playback = false;
-          cu.m_mode = camera_utils::LIVE_STREAM;
+          cu.setMode( camera_utils::LIVE_STREAM);
       }
       else//on playback mode
       {
@@ -138,8 +144,8 @@
 
           std::cerr<<"Mode is: Playback" << std::endl;
           playback_file_name = argv[1];
-          cu.m_mode = camera_utils::PLAYBACK;
-          cu.m_filename = playback_file_name;
+          cu.setMode( camera_utils::PLAYBACK);
+          cu.setFileName(playback_file_name);
 	
       }
 
@@ -147,98 +153,135 @@
       //rs::playback::context context(playback_file_name.c_str());
 
       //init the camera
-      st = cu.init_camera(cu.m_colorInfo,cu.m_depthInfo,objRecognizer.impl,&objRecognizer.or_data,&objRecognizer.or_configuration);
+      st = cu.init_camera(objRecognizer.impl,&objRecognizer.or_data,&objRecognizer.or_configuration);
       if (st!= rs::core::status_no_error)
       {
           std::cout<<"Camera initialization Failed"<<std::endl;
           return st;
       }
 
-      display.createRects(cu.m_colorInfo.width, cu.m_colorInfo.height, cu.m_depthInfo.width, cu.m_depthInfo.height);
+      display.createRects(cu.getColorInfo().width, cu.getColorInfo().height, cu.getDepthInfo().width, cu.getDepthInfo().height);
+
+
+      //objRecognizer.print_objects();
 
       /***********************************start streaming*******************************************/
 
-      while(play && cu.m_dev->is_streaming())
+      objRecognizer.print_objects();
+
+      while(play && (cu.getDevice())->is_streaming())//while user did not exit and device is streaming data
       {	  
 
-          keyPressed = (char)cv::waitKey(1);
-          switch (keyPressed)
+
+
+          cu.getDevice()->wait_for_frames();
+          sample_set = cu.get_sample_set();//get a sample from device
+
+          cu.copy_color_to_cvmat(renderImage);//copy RGB image to cv mat
+          cu.copy_depth_to_cvmat(depthMat_original);//copy depth image to cv mat
+          //renderImage = Image2Mat(cu, cu.m_colorInfo.format);
+          //depthMat_original = Image2Mat(cu, cu.m_depthInfo.format);
+
+
+          if(!depthMat_original.empty())//if depth has data
           {
-          case 'o':
-              objRecognizer.create_roi(0,0,cu.m_colorInfo.width,cu.m_colorInfo.height/*cu.m_colorInfo.width/4,cu.m_colorInfo.height/4,cu.m_colorInfo.width/2,cu.m_colorInfo.height/2*/);
-              t1 = std::thread(processOR, sample_set);
-              t1.detach();
-              break;
-          case 'q':
-              play = false;
-              break;
-          default:
-
-          cu.m_dev->wait_for_frames();
-          sample_set = cu.get_sample_set(cu.m_colorInfo, cu.m_depthInfo);
-
-          renderImage = Image2Mat(cu, cu.m_colorInfo.format);
-          depthMat_original = Image2Mat(cu, cu.m_depthInfo.format);
-          depthMat_original.convertTo(depthMat,CV_8UC1,0.056);
-
-          if(!depthMat.empty())
-          {
-            double factor = 1.0;
-            mult = depthMat * factor;
-
-            if( m_frame_number%PROCESS_RATE == 0 )//time to process image for collision detection
+            depthMat_original.convertTo(depthMat,CV_8UC1,0.056);//convert  depth values - to receive RGB rang values
+            keyPressed = (char)cv::waitKey(1);
+            switch (keyPressed)
             {
-
-                cv::medianBlur(mult, m_blur, 3);
-                for(int i = 0; i < 5; i++)
-                    cv::medianBlur(m_blur, m_blur, 3);
-                    //cv::GaussianBlur(m_blur, m_blur, s, sigmaX );
-
-              vDisparity = ImageProcessor.createVDisparity(m_blur, cu.m_depthInfo.width);
-              m_blur = ImageProcessor.createGroundMap(vDisparity, m_blur);
-              col = obsDetector.get_all_collisions(m_blur);
-              navigation_msg = navigator.navigate(col);
-
-            }
-//              if ( m_frame_number%50 == 0)//time to process OR
-//              {
-//                  objRecognizer.create_roi(cu.m_colorInfo.width/4,cu.m_colorInfo.height/4,cu.m_colorInfo.width/2,cu.m_colorInfo.height/2);
-//                  t1 = std::thread(processOR, sample_set);
-//                  t1.detach();
-//               }
-            }
+                case 'o':  //OR option chosen
+                    processOR(sample_set,depthMat_original,renderImage);
+                    //t1 = std::thread(processOR, sample_set);
+                    //t1.detach();
+                    break;
+                case 'q':   //Quit option chosen
+                    play = false;
+                    break;
+                default:
+                    if(( cu.getFrameNum() -1 )%PROCESS_RATE == 0)//check if reached rate time to process image for collision detection
+                    {
 
 
-          cv::Mat colored_depth(mult.rows,mult.cols,CV_8UC3,3);
-          cv::cvtColor(mult,colored_depth,CV_GRAY2RGB);
+                        m_blur = ImageProcessor.m_blurImage(depthMat,3,10);//blur - to avoid missing data
+                        //m_blur = ImageProcessor.erodeImage(m_blur,9);
+                        //m_blur = ImageProcessor.dilateImage(m_blur,9);
+                        vDisparity = ImageProcessor.createVDisparity(m_blur, cu.getDepthInfo().width);//create v-disparity for ground removal
+                        m_blur = ImageProcessor.createGroundMap(vDisparity, m_blur);//remove the ground from the image
+                        col = obsDetector.get_all_collisions(m_blur);//search for collitions from all layers
+                        navigation_msg = navigator.navigate(col);//navigate the user accurding to the collisions that were found on the different layers
 
-          colored_depth = display.DisplayCollisions(colored_depth,col,navigation_msg,true);
-          renderImage = display.DisplayCollisions(renderImage,col,navigation_msg,false);
+                    }
+                    //if ( cu.getFrameNum()%50 == 0)//time to process OR
+                    //{
+                        //objRecognizer.create_roi(cu.m_colorInfo.width/4,cu.m_colorInfo.height/4,cu.m_colorInfo.width/2,cu.m_colorInfo.height/2);
+                        //t1 = std::thread(processOR, sample_set);
+                        //t1.detach();
+                    //}
 
-          cv::imshow(DEPTH_WINDOW_NAME,colored_depth);// colored_depth);
-//          cv::imshow(PROCESSED_DEPTH_WINDOW_NAME, vDisparity);//m_blur);
-          cv::imshow(COLOR_WINDOW_NAME, renderImage);//vDisparity
+                        colored_depth = cv::Mat(depthMat.rows,depthMat.cols,CV_8UC3);
+                        cv::cvtColor(depthMat,colored_depth,CV_GRAY2RGB,3);
 
+                        colored_depth = display.DisplayCollisions(colored_depth,col,navigation_msg,true);
+                        renderImage = display.DisplayCollisions(renderImage,col,navigation_msg,false);
 
-          //get frame
-          m_frame_number++;
-          //cu.release_images();
-              break;
+                        cv::imshow(DEPTH_WINDOW_NAME,colored_depth);// m_blur);
+                        //cv::imshow(PROCESSED_DEPTH_WINDOW_NAME, vDisparity);//m_blur);
+                        cv::imshow(COLOR_WINDOW_NAME, renderImage);
+
+                        break;
+
           }
+        }
+      }
 
-      }//while
-
-      cu.m_dev->stop();
+      cu.getDevice()->stop();
       //delete gpio;
       std::cout<<"exiting\n";
-  }//main
+  }
 
 
 //=============================================OR thread============================================================//
-void processOR(rs::core::correlated_sample_set* sample_set)
+void processOR(rs::core::correlated_sample_set* sample_set,cv::Mat depthMat_original, cv::Mat colorMat)
 {
-    objRecognizer.find_objects(* sample_set);
+
+    cv::Mat ccm, depth;
+    rs::core::pointF32* color_points;
+    int num = objRecognizer.prepareImage2OR(depthMat_original, colorMat, ccm, depth,&color_points, display, cu);
+
+//    cv::namedWindow(CCM_WINDOW_NAME, CV_WINDOW_NORMAL);
+//    cv::resizeWindow(CCM_WINDOW_NAME, 960, 540);
+//    cv::moveWindow(CCM_WINDOW_NAME,100,100);
+
+//    cv::namedWindow(DEPTH_WINDOW_NAME, CV_WINDOW_NORMAL);
+//    cv::resizeWindow(DEPTH_WINDOW_NAME, 640, 360);
+//    cv::moveWindow(DEPTH_WINDOW_NAME,1100,100);
+
+//    cv::imshow(CCM_WINDOW_NAME, depth);
+//    cv::imshow(DEPTH_WINDOW_NAME, ccm);
+//    cv::waitKey(1000);
+
+    for (int i = 0; i < num; i+=2) {
+        int x = color_points[i].x;
+        int y = color_points[i].y;
+        int n_x = color_points[i+1].x;
+        int n_y = color_points[i+1].y;
+        int width = color_points[i + 1].x - color_points[i].x;
+        int height = color_points[i + 1].y - color_points[i].y;
+
+        objRecognizer.create_roi(x,y,width,height);
+        //objRecognizer.create_roi(0,0,cu.getColorInfo().width,cu.getColorInfo().height);
+        if(objRecognizer.find_objects(*sample_set))
+            cv::waitKey(700);
+
+
+    }
+    cv::waitKey(1000);
+    cu.release_images();//TODO: check
+//    cv::destroyWindow(CCM_WINDOW_NAME);
+
 }
+
+
 
 //============================================= Image2Mat ===========================================================//
 
@@ -248,15 +291,15 @@ void processOR(rs::core::correlated_sample_set* sample_set)
 
       if(format == rs::core::pixel_format::rgb8)//color
       {
-            cvMat.create(cu.m_colorInfo.height, cu.m_colorInfo.width, CV_8UC3);
-            memcpy(cvMat.data,cu.m_color_buffer, cvMat.elemSize() * cvMat.total());
+            cvMat.create(cu.getColorInfo().height, cu.getColorInfo().width, CV_8UC3);
+            memcpy(cvMat.data,cu.getColorBuffer(), cvMat.elemSize() * cvMat.total());
             cv::cvtColor(cvMat,cvMat,CV_RGB2BGR);
       }
 
       else//depth
       {
-            cvMat.create(cu.m_depthInfo.height, cu.m_depthInfo.width, CV_16UC1);
-            memcpy(cvMat.data,cu.m_depth_buffer, cvMat.elemSize() * cvMat.total());
+            cvMat.create(cu.getDepthInfo().height, cu.getDepthInfo().width, CV_16UC1);
+            memcpy(cvMat.data,cu.getDepthBuffer(), cvMat.elemSize() * cvMat.total());
       }
       return  cvMat;
   }

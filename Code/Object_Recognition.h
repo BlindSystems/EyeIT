@@ -32,6 +32,9 @@
 
 #include "NavigationUtils.h"
 #include "ObstacleManager.h"
+#include "processingmanager.h"
+#include "camera_utils.h"
+#include "displaymanager.h"
 
 namespace ORUtils{
   
@@ -46,9 +49,11 @@ namespace ORUtils{
       rs::core::status set_rect(int thirdlayer);
       rs::core::status process_sample(rs::core::correlated_sample_set& sample_set);
       std::string get_object_name();
-      void find_objects(rs::core::correlated_sample_set& sample_set);
+      bool find_objects(rs::core::correlated_sample_set& sample_set);
       void create_roi(int x, int y, int width, int height);
       rs::core::status set_rect();
+      void print_objects();
+      int prepareImage2OR(cv::Mat depthMat_original, cv::Mat colorMat, cv::Mat &color_ccm, cv::Mat &depth_ccm,rs::core::pointF32** color_points,DisplayManager display, camera_utils cu);
 
       rs::core::image_info colorInfo,depthInfo;
       rs::object_recognition::or_video_module_impl impl;
@@ -56,7 +61,7 @@ namespace ORUtils{
       rs::object_recognition::or_configuration_interface* or_configuration = nullptr;
       //rs::core::correlated_sample_set* m_sample_set;
       void* m_color_buffer;
-      int m_frame_number;
+      int m_frame_number = 0;
 
       rs::core::rect roi;
       rs::object_recognition::recognition_data* recognition_data;
@@ -66,6 +71,13 @@ namespace ORUtils{
       std::unique_ptr<rs::core::context_interface> ctx;
 
       AudioUtils::AudioManager audio;
+
+    private:
+      ProcessingManager ImageProcessor;
+      camera_utils cu;
+
+
+
   };
 }
 

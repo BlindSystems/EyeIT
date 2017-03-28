@@ -8,77 +8,181 @@
   mr = ml = st = d  =0; //all flags start from frame zero
   last_play = 0;
 }*/
-void AudioUtils::AudioManager::init()
-{
-
-}
 
 
 
-void AudioUtils::AudioManager::play(std::string msg/*Message msg, int frame_num*/)
+
+bool AudioUtils::AudioManager::play(std::string msg/*Message msg, int frame_num*/)
 { 
     //=============text to speach option=====================================================//
 
-    if(!is_OR_playing)
-    {
-        std::string sound_message =  "espeak -v en '"+msg+"'";
-        const char * sound = sound_message.c_str();
-        system(sound);
-    }
-    else is_OR_playing = false;
 
 
+//        std::string sound_message =  "espeak -v en '"+msg+"'";
+//        const char * sound = sound_message.c_str();
+//        system(sound);
 
+//        return true;
 
 
 
     //=============recorded audio option========================================================//
 
-//    if(!is_OR_playing)
-//    {
-  
-//  if(msg == "move left")
-//  {
-    
-//    //if( ((frame_num - ml) > max_delay) /*|| (abs(mr - ml) > min_delay) || (abs(st - ml) > min_delay)*/ || ml==0)
-//    //if(AudioManager::findSmallestInterval() > min_delay || ml == 0)
-//    {
-//      system("gst-play-1.0 move_left.wav &");
-//      //ml = frame_num;
-//      return;
-//    }
-//  }
-  
-//  if(msg == "move_right")
-//  {
-//    std::cout<<" in play for: right"<<std::endl;
-//    //if( ((frame_num - mr) > max_delay) /*|| (abs(ml - mr) > min_delay) || (abs(st - mr) > min_delay)*/ || mr == 0)
-//    //if(AudioManager::findSmallestInterval() > min_delay || mr == 0)
-//    {
-//      system("gst-play-1.0 move_right.wav &");
-//      //mr = frame_num;
-//      return;
-//    }
-//  }
-//  if(msg == "stop")
-//  {
-//    //if( ((frame_num - st) > max_delay) /*|| (abs(ml - st) > min_delay) || (abs(mr - st) > min_delay)*/ || st == 0)
-//    //if(AudioManager::findSmallestInterval() > min_delay || st == 0)
-//    {
-//      std::cout<<" in play for: stop"<<std::endl;
-//      system("gst-play-1.0 stop.wav &");
-//      //st = frame_num;
-//      return;
-//    }
-//  }
-//  if(msg == "welcome")
-//  {
-//      system("gst-play-1.0 welcome.wav &");
+    if(msg == "welcome")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/welcome.wav &");
+        return true;
 
-//  }
+    }
+    if(msg == "instructions")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/instructions.wav &");
+        return true;
+    }
+    if(msg == "move_left")
+    {
+      system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/move_left.wav &");
+      return true;
+    }
+    if(msg == "move_right")
+    {
+      system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/move_right.wav &");
+      return true;
+    }
+    if(msg == "stop")
+    {
+      system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/stop.wav &");
+      return true;
+    }
+
+
+    //======================OR_Objects==========================================================//
+
+//    if(msg == "cabinet")
+//    {
+//        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/cabinet.wav &");
+//        return true;
 //    }
-//    else is_OR_playing = false;
-  //last_play = frame_num;
+    if(msg == "bag")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/bag.wav &");
+        return true;
+    }
+    if(msg == "bed")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/bed.wav &");
+        return true;
+    }
+    if(msg == "bottle")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/buttle.wav &");
+        return true;
+    }
+    if(msg == "chair")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/chair.wav &");
+        return true;
+    }
+    if(msg == "closed_door")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/closed_door.wav &");
+        return true;
+    }
+    if(msg == "cup")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/cup.wav &");
+        return true;
+    }
+    if(msg == "laptop")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/laptop.wav &");
+        return true;
+    }
+    if(msg == "light_switch")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/light_switch.wav &");
+        return true;
+    }
+    if(msg == "open_door")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/open_door.wav &");
+        return true;
+    }
+    if(msg == "picture")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/picture.wav &");
+        return true;
+    }
+//    if(msg == "pillow")
+//    {
+//        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/pillow.wav &");
+//        return true;
+//    }
+    if(msg == "shoes")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/shoes.wav &");
+        return true;
+    }
+//    if(msg == "sink")
+//    {
+//        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/sink.wav &");
+//        return true;
+//    }
+    if(msg == "smartphone")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/smartphone.wav &");
+        return true;
+    }
+    if(msg == "sofa")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/sofa.wav &");
+        return true;
+    }
+    if(msg == "table")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/table.wav &");
+        return true;
+    }
+//    if(msg == "window")
+//    {
+//        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/window.wav &");
+//        return true;
+//    }
+    if(msg == "garbage")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/garbage.wav &");
+        return true;
+    }
+    if(msg == "houseplant")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/house_plant.wav &");
+        return true;
+    }
+    if(msg == "light")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/lamp.wav &");
+        return true;
+    }
+
+    //========================================================================================//
+
+    if(msg == "on_your_left")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/on_your_left.wav &");
+        return true;
+    }
+    if(msg == "on_your_right")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/on_your_right.wav &");
+        return true;
+    }
+    if(msg == "in_front_of_you")
+    {
+        system("gst-play-1.0 /home/ntuser-chavy/Desktop/WAV/in_front_of_you.wav &");
+        return true;
+    }
+    return false;
+
 }
 
 /*oid  voiceORObject(std::string object_name)
@@ -132,14 +236,4 @@ void AudioUtils::AudioManager::play(std::string msg/*Message msg, int frame_num*
 
 
 
-int AudioUtils::AudioManager::findSmallestInterval()
-{
-  int diff = std::numeric_limits< int >::max();
-  if(abs(mr-ml)<diff)
-    diff = abs(mr-ml);
-  if(abs(mr-st)<diff)
-    diff = abs(mr-st);
-  if(abs(st-ml)<diff)
-    diff = abs(st-ml);
-  return diff;
-}
+

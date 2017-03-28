@@ -10,7 +10,7 @@
 	//request the first (index 0) supproted module config.
 	rs::core::status st;
         rs::core::video_module_interface::supported_module_config cfg;
-	st =impl.query_supported_module_config(0, cfg);
+    st =impl.query_supported_module_config(0, cfg);
 	if (st != rs::core::status_no_error)
 		return st;
 
@@ -67,8 +67,8 @@
 		memcpy(&actualConfig.image_streams_configs[(int)rs::stream::depth].intrinsics, &depthInt, sizeof(rs::intrinsics));
 
 	// handling projection
-	//rs::core::projection_interface* proj = rs::core::projection_interface::create_instance(&colorInt, &depthInt, &ext);
-	//impl.set_projection(proj);
+    //rs::core::projection_interface* proj = rs::core::projection_interface::create_instance(&colorInt, &depthInt, &ext);
+    //impl.set_projection(proj);
 
 	//setting the selected configuration (after projection)
 
@@ -103,23 +103,124 @@
       roi.height = height;
   }
 
-  void ORUtils::ObjectRecognizer::find_objects(rs::core::correlated_sample_set& sample_set)
+  bool ORUtils::ObjectRecognizer::find_objects(rs::core::correlated_sample_set& sample_set)
   {
       if(set_rect() != rs::core::status_no_error)
-          return;
-      if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
-          return;
-      if(or_data->query_single_recognition_result(&recognition_data,array_size) != rs::core::status_no_error)
-          return;
-      if(or_configuration->query_object_name_by_id(recognition_data[0].probability>0.5))
       {
-         audio.play(or_configuration->query_object_name_by_id(recognition_data[0].label));
-         audio.is_OR_playing = true;
+          std::cout<<"Failed to set rect" << std::endl;
+          return false;
       }
-
+      if(impl.process_sample_set(sample_set) != rs::core::status_no_error)
+      {
+          std::cout<<"Failed to process sample" << std::endl;
+          return false;
+      }
+      if(or_data->query_single_recognition_result(&recognition_data,array_size) != rs::core::status_no_error)
+      {
+          std::cout<<"Failed to query result" << std::endl;
+          return false;
+      }
+      if(or_configuration->query_object_name_by_id(recognition_data[0].probability>0.8))
+      {
+         if(audio.play(or_configuration->query_object_name_by_id(recognition_data[0].label)))
+         {
+             cv::waitKey(800);
+             int image_width = cu.getColorInfo().width;
+             if((float)(roi.x + roi.width) < (float)(image_width)*(0.4))
+             {
+                 audio.play("on_your_left");
+                 //return true;
+             }
+             else if((float)roi.x > (float)(image_width)*(0.6))
+             {
+                 audio.play("on_your_right");
+                //return true;
+             }
+             else
+                 audio.play("in_front_of_you");
+         }
+         return true;
+      }
+      return false;
   }
 
-  
+
+  void ORUtils::ObjectRecognizer::print_objects()
+  {
+      for(int i = 0; i<or_configuration->query_number_of_classes() ; i++)
+          std::cout<<or_configuration->query_object_name_by_id(i)<<std::endl;
+  }
+
+  int ORUtils::ObjectRecognizer::prepareImage2OR(cv::Mat depthMat_original, cv::Mat colorMat, cv::Mat &depth_ccm, cv::Mat &color_ccm,rs::core::pointF32** color_points, DisplayManager display, camera_utils cu)
+  {
+      this->cu = cu;
+      cv::Mat depthMat;
+      //cv::Mat copy = depthMat_original.clone();
+      //copy.convertTo(depthMat,CV_8UC1,0.056);
+      depthMat_original.convertTo(depthMat,CV_8UC1,0.056);
+
+      cv::Mat m_blur = ImageProcessor.m_blurImage(depthMat,3,10);
+      //cv::imshow("m_blur",m_blur);
+      //cv::waitKey(1);
+
+      //cv::Mat vd = ImageProcessor.createVDisparity(m_blur,cu.getDepthInfo().width);
+      //cv::Mat img = ImageProcessor.createGroundMap(vd,m_blur,255);
+      //cv::imshow("img",img);
+      //cv::waitKey(1);
+
+      cv::Mat removed = ImageProcessor.removeClosePixels(m_blur,50); //remove too-close pixels (no depth data - holes)
+      //cv::imshow("removed",removed);
+      //cv::waitKey(1);
+
+      cv::Mat erode = ImageProcessor.erodeImage(removed,9);       //smooth image
+      //cv::imshow("erode",erode);
+      //cv::waitKey(1);
+
+      cv::Mat dilate = ImageProcessor.dilateImage(erode,9);       //smooth image
+      //cv::imshow("dilate",dilate);
+      //cv::waitKey(1);
+
+      cv::Mat thr;                                                //remove far objects
+      int th_v = 170;
+      cv::threshold(dilate, thr, th_v, 255, cv::THRESH_TRUNC /*|| cv::THRESH_OTSU*/);
+      thr = thr * 1.5;
+      //cv::imshow("threshold",thr);
+      //cv::waitKey(1);
+
+      cv::Mat edges = ImageProcessor.removeEdges(thr);            //remove edges
+      //cv::imshow("edges",edges);
+      //cv::waitKey(1);
+
+      cv::Mat blur_edges = ImageProcessor.m_blurImage(edges,3,3); //smooth image
+
+      //cv::imshow("blur_edges",blur_edges);
+      //cv::waitKey(1);
+
+      //cv::Mat thr_otsu;
+      //cv::threshold(edges, thr_otsu, th_v, 255, cv::THRESH_TRUNC || cv::THRESH_OTSU);
+      //cv::imshow("thr_otsu",thr_otsu);
+      //cv::waitKey(1);
+
+      rs::core::point3dF32 *depth_points;
+      int points_n;
+      //cv::Mat ccm;
+      depth_points = ImageProcessor.findConnectedComponents(blur_edges, depthMat_original, depth_ccm, &points_n);
+
+      //depth_ccm = ccm.clone();
+
+
+      *color_points = cu.projectPoints2ColorImage(depth_points,points_n);
+      //cv::imshow("ccm",ccm);
+      //cv::waitKey(1);
+
+      color_ccm = colorMat.clone();
+      display.drawRects(color_ccm,*color_points,points_n);
+      //cv::namedWindow("color_ccm", CV_WINDOW_NORMAL);
+      //cv::resizeWindow("color_ccm",640,360);
+      //cv::imshow("color_ccm",color_ccm);
+      //cv::waitKey(1);
+      return points_n;
+  }
 //  rs::core::status ORUtils::ObjectRecognizer::set_rect(int thirdlayer)
 //  {
     

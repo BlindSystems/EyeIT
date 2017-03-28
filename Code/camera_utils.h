@@ -29,22 +29,37 @@ namespace rs {
 
 class camera_utils
 {
+
 public:
+
+    enum CameraMode { LIVE_STREAM, PLAYBACK, RECORD};
+
     camera_utils();
     ~camera_utils();
 
   // handling all camera initilzation (projection, camera configuration, MW intilization)
-  rs::core::status init_camera(rs::core::image_info& colorInfo, rs::core::image_info& depthInfo,rs::object_recognition::or_video_module_impl& impl,
+  rs::core::status init_camera(rs::object_recognition::or_video_module_impl& impl,
         rs::object_recognition::or_data_interface** or_data, rs::object_recognition::or_configuration_interface** or_configuration);
   // get rs::core::correlated_sample_set* from the camrea (encapsulates all conversion staff)
-  rs::core::correlated_sample_set* get_sample_set(rs::core::image_info& colorInfo,rs::core::image_info& depthInfo);
+  rs::core::correlated_sample_set* get_sample_set();
   void copy_color_to_cvmat(cv::Mat& CVColor);
+  void copy_depth_to_cvmat(cv::Mat& CVDepth);
   //stop the device
   void stop_camera();
-  int get_frame_number();
   void setFileIO(const std::string& filename, bool isRecord = false);
+  rs::core::pointF32* projectPoints2ColorImage(rs::core::point3dF32 *depth_points, int num = 1);
+  rs::device* getDevice(){return m_dev;}
+  int getFrameNum(){return m_frame_number;}
+  CameraMode getMode(){return m_mode;}
+  void setMode(CameraMode mode){m_mode=mode;}
+  void setFileName(std::string fileName){m_filename=fileName;}
+  rs::core::image_info getColorInfo(){return m_colorInfo;}
+  rs::core::image_info getDepthInfo(){return m_depthInfo;}
+  void* getColorBuffer(){return m_color_buffer;}
+  void* getDepthBuffer(){return m_depth_buffer;}
+  void release_images();
 
-//protected:
+private:
   std::shared_ptr<rs::core::context_interface> m_ctx;
   rs::device* m_dev;
   rs::core::correlated_sample_set* m_sample_set;
@@ -54,10 +69,15 @@ public:
   void* m_depth_buffer;
   int m_frame_number;
 
-  enum CameraMode { LIVE_STREAM, PLAYBACK, RECORD};
+  rs::core::projection_interface* m_proj;
   CameraMode m_mode;
+
   std::string m_filename;
-  void release_images();
+
+
+public:
+
+
 };
 
 #endif // CAMERA_UTILS_H

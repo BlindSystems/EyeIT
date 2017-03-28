@@ -15,7 +15,7 @@ camera_utils::~camera_utils()
 {
 }
 
-rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::core::image_info& depthInfo,rs::object_recognition::or_video_module_impl& impl,
+rs::core::status camera_utils::init_camera(rs::object_recognition::or_video_module_impl& impl,
              rs::object_recognition::or_data_interface** or_data, rs::object_recognition::or_configuration_interface** or_configuration)
 {
     rs::core::status st;
@@ -67,6 +67,14 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
         // check that the configuration is supported
         bool found_config = false;
         int	config_idx = 0;
+
+//        for(int i = 0; i<6; i++)
+//        {
+//            if(impl.query_supported_module_config(i , cfg) != rs::core::status_no_error)
+//                break;
+//            std::cout<<"conf: "<<i<<" color : "<<cfg.image_streams_configs[(int)rs::stream::color].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::color].size.height<<" depth : "<<cfg.image_streams_configs[(int)rs::stream::depth].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::depth].size.height<< " fps color: "<<cfg.image_streams_configs[(int)rs::stream::color].frame_rate
+//                   <<"fps depth "<<cfg.image_streams_configs[(int)rs::stream::depth].frame_rate<<std::endl;
+//         }
         while (impl.query_supported_module_config(config_idx , cfg) == rs::core::status_no_error)
         {
         std::cout<<"conf: "<<config_idx<<" color : "<<cfg.image_streams_configs[(int)rs::stream::color].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::color].size.height<<" depth : "<<cfg.image_streams_configs[(int)rs::stream::depth].size.width<<" "<<cfg.image_streams_configs[(int)rs::stream::depth].size.height<< " fps color: "<<cfg.image_streams_configs[(int)rs::stream::color].frame_rate
@@ -91,6 +99,7 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
         //get pointer the the camera
         m_dev = m_ctx->get_device(0);
 
+
         //request the first (index 0) supported module config.
         st = impl.query_supported_module_config(0, cfg);
         if (st != rs::core::status_no_error)
@@ -111,19 +120,16 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
 
 
     //handling color image info (for later using)
-    colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].size.height;
-    colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].size.width;
-    colorInfo.format = rs::core::pixel_format::rgb8;
-    colorInfo.pitch = colorInfo.width * 3;
-    m_colorInfo = colorInfo;
+    m_colorInfo.height = cfg.image_streams_configs[(int)rs::stream::color].size.height;
+    m_colorInfo.width = cfg.image_streams_configs[(int)rs::stream::color].size.width;
+    m_colorInfo.format = rs::core::pixel_format::rgb8;
+    m_colorInfo.pitch = m_colorInfo.width * 3;
 
     //handling depth image info (for later using)
-    depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].size.height;
-    depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].size.width;
-    depthInfo.format = rs::core::pixel_format::z16;
-    depthInfo.pitch = depthInfo.width * 2;
-    m_depthInfo = depthInfo;
-
+    m_depthInfo.height = cfg.image_streams_configs[(int)rs::stream::depth].size.height;
+    m_depthInfo.width = cfg.image_streams_configs[(int)rs::stream::depth].size.width;
+    m_depthInfo.format = rs::core::pixel_format::z16;
+    m_depthInfo.pitch = m_depthInfo.width * 2;
 
     m_dev->start();
 
@@ -159,8 +165,8 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
 
 
     // handling projection
-    rs::core::projection_interface* proj = rs::core::projection_interface::create_instance(&core_colorInt, &core_depthInt, &core_ext);
-    actualConfig.projection = proj;
+    m_proj = rs::core::projection_interface::create_instance(&core_colorInt, &core_depthInt, &core_ext);
+    actualConfig.projection = m_proj;
     //setting the selected configuration (after projection)
     st=impl.set_module_config(actualConfig);
     if (st != rs::core::status_no_error)
@@ -180,7 +186,7 @@ rs::core::status camera_utils::init_camera(rs::core::image_info& colorInfo, rs::
     return rs::core::status_no_error;
 }
 
-rs::core::correlated_sample_set* camera_utils::get_sample_set(rs::core::image_info& colorInfo,rs::core::image_info& depthInfo)
+rs::core::correlated_sample_set* camera_utils::get_sample_set()
 {
     m_dev->wait_for_frames();
 
@@ -196,8 +202,8 @@ rs::core::correlated_sample_set* camera_utils::get_sample_set(rs::core::image_in
 
     rs::core::image_interface::image_data_with_data_releaser color_container(colorBuffer);
     rs::core::image_interface::image_data_with_data_releaser depth_container(depthBuffer);
-    auto colorImg = rs::core::image_interface::create_instance_from_raw_data( &colorInfo, color_container, rs::core::stream_type::color, rs::core::image_interface::any,m_frame_number, (uint64_t)m_dev->get_frame_timestamp(rs::stream::color));
-    auto depthImg = rs::core::image_interface::create_instance_from_raw_data( &depthInfo, depth_container, rs::core::stream_type::depth, rs::core::image_interface::any,m_frame_number, (uint64_t)m_dev->get_frame_timestamp(rs::stream::depth));
+    auto colorImg = rs::core::image_interface::create_instance_from_raw_data( &m_colorInfo, color_container, rs::core::stream_type::color, rs::core::image_interface::any,m_frame_number, (uint64_t)m_dev->get_frame_timestamp(rs::stream::color));
+    auto depthImg = rs::core::image_interface::create_instance_from_raw_data( &m_depthInfo, depth_container, rs::core::stream_type::depth, rs::core::image_interface::any,m_frame_number, (uint64_t)m_dev->get_frame_timestamp(rs::stream::depth));
 
     //create sample from both images
 
@@ -217,13 +223,14 @@ rs::core::correlated_sample_set* camera_utils::get_sample_set(rs::core::image_in
  }
 void camera_utils::copy_color_to_cvmat(cv::Mat& CVColor)
 {
-  memcpy(CVColor.data,m_color_buffer, CVColor.elemSize() * CVColor.total());
-  cv::cvtColor(CVColor,CVColor,CV_RGB2BGR);
+    CVColor.create(m_colorInfo.height, m_colorInfo.width, CV_8UC3);
+    memcpy(CVColor.data,m_color_buffer, CVColor.elemSize() * CVColor.total());
+    cv::cvtColor(CVColor,CVColor,CV_RGB2BGR);
 }
-
-int camera_utils::get_frame_number()
+void camera_utils::copy_depth_to_cvmat(cv::Mat& CVDepth)
 {
-  return m_frame_number;
+    CVDepth.create(m_depthInfo.height, m_depthInfo.width, CV_16UC1);
+    memcpy(CVDepth.data,m_depth_buffer, CVDepth.elemSize() * CVDepth.total());
 }
 
 void camera_utils::setFileIO(const std::string& filename, bool isRecord)
@@ -245,4 +252,20 @@ void camera_utils::release_images()
     m_sample_set->images[(int)rs::stream::depth]->release();
     m_sample_set->images[(int)rs::stream::depth] = nullptr;
   }
+}
+
+//projection
+rs::core::pointF32* camera_utils::projectPoints2ColorImage(rs::core::point3dF32 *depth_points, int num)
+{
+
+   rs::core::pointF32* color_points = new rs::core::pointF32[num];
+   for (int var = 0; var < num; ++var)
+   {
+       std::cout << " num:" << num << std::endl;
+       std::cout << depth_points[var].x << ", " << depth_points[var].y << "," << depth_points[var].z;
+       std::cout << std::endl;
+   }
+   rs::core::status st = m_proj->map_depth_to_color(num,depth_points,color_points);
+   return color_points;
+
 }

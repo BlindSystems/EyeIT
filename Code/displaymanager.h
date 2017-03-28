@@ -8,6 +8,7 @@
 #include "opencv2/opencv.hpp"
 
 #include "ObstacleManager.h"
+#include "rs_sdk.h"
 
 class DisplayManager
 {
@@ -15,7 +16,8 @@ public:
 
     DisplayManager();
     void createRects(int colorWidth, int colorHight, int depthWidth, int depthHight);
-    cv::Mat DisplayCollisions(cv::Mat mat, int *  col,std::string navigation_msg,  bool isDepth);
+    cv::Mat DisplayCollisions(cv::Mat mat, int* col,std::string navigation_msg, bool isDepth);
+    void drawRects(cv::Mat &color,rs::core::pointF32* color_points, int num);
 
     cv::Rect color_right, color_left, color_center, depth_right, depth_left, depth_center;
 
